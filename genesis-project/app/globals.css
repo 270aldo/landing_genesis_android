@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════
+   NGX GENESIS REVEAL — Global Styles
+   Design System: NGX Vite Style
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --genesis-bg: #010101;
+  --vite-primary: #16171d;
+  --vite-border: #3b3440;
+  --vite-electric: #6c3bff;
+  --vite-brand: #b39aff;
+  --vite-text-2: #98989f;
+}
+
+html {
+  scroll-behavior: auto; /* Framer Motion handles smoothing */
+}
+
+body {
+  background: var(--genesis-bg);
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar — Vite minimal style */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--genesis-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--vite-border);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vite-electric);
+}
+
+/* Selection */
+::selection {
+  background: rgba(108, 59, 255, 0.3);
+  color: #ffffff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VITE STYLE COMPONENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Blueprint frame borders */
+.vite-frame {
+  border-left: 1px solid rgba(59, 52, 64, 0.3);
+  border-right: 1px solid rgba(59, 52, 64, 0.3);
+  margin: 0 1rem;
+}
+
+/* Section with tick marks */
+.vite-section {
+  border-top: 1px solid var(--vite-border);
+  position: relative;
+}
+.vite-section::before,
+.vite-section::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  width: 1px;
+  height: 11px;
+  background: var(--vite-border);
+}
+.vite-section::before { left: -1px; }
+.vite-section::after { right: -1px; }
+
+/* Glassmorphism card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--vite-border);
+  border-radius: 16px;
+  padding: clamp(20px, 3vw, 32px);
+  transition: border-color 0.3s ease;
+}
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Vite glow button */
+.btn-glow {
+  position: relative;
+  z-index: 0;
+}
+.btn-glow::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6c3bff, #b39aff, #6b1eb9);
+  z-index: -2;
+  filter: blur(1px);
+}
+.btn-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #6c3bff;
+  z-index: -1;
+}
+.btn-glow:hover {
+  box-shadow: 0 0 30px rgba(108, 59, 255, 0.5);
+  transform: scale(1.02);
+}
+.btn-glow:active {
+  transform: scale(0.97);
+}
+
+/* Scan line sweep */
+.scan-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(108, 59, 255, 0.08);
+  animation: scanLine 5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanLine {
+  0% { top: -2px; }
+  100% { top: 100%; }
+}
+
+/* Noise texture */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  pointer-events: none;
+}
+
+/* Typography — Vite dense headings */
+.vite-h1 {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -3px;
+}
+.vite-h2 {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  line-height: 1.0;
+  letter-spacing: -1.2px;
+}
+.vite-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* Violet gradient divider */
+.violet-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--vite-electric), transparent);
+}
+
+/* Stat number */
+.stat-number {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  color: var(--vite-brand);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .vite-h1 { letter-spacing: -2px; }
+  .vite-h2 { letter-spacing: -0.8px; }
+  .vite-frame { margin: 0 0.5rem; }
+}
