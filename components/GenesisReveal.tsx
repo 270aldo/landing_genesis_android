@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
-import { useScroll, motion, useMotionValueEvent } from "framer-motion";
+import { useScroll, motion, useMotionValueEvent, AnimatePresence } from "framer-motion";
+import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare } from "lucide-react";
 import {
   TOKENS,
   POST_SCROLL_THEME,
@@ -14,10 +15,13 @@ import {
   SECTION_BACKGROUNDS,
   SYSTEM_SECTION_COPY,
   DUO_COPY,
+  CONTACT_SECTION,
   getFramePath,
   type CapabilityIconId,
   type NarrativeSection,
+  type CapabilityItem,
 } from "@/lib/tokens";
+import GenesisAudio from "./GenesisAudio";
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -31,6 +35,7 @@ function getSectionOpacity(progress: number, section: NarrativeSection): number 
 
   if (progress < scrollStart || progress > scrollEnd) return 0;
   if (progress < fadeInEnd) return (progress - scrollStart) / (fadeInEnd - scrollStart);
+  if (scrollEnd >= 0.99 && progress >= fadeOutStart) return 1;
   if (progress > fadeOutStart) return 1 - (progress - fadeOutStart) / (scrollEnd - fadeOutStart);
   return 1;
 }
@@ -70,62 +75,16 @@ function buildAmbientStyle(
 }
 
 function getCapabilityIcon(iconId: CapabilityIconId): JSX.Element {
+  const props = { size: 24, strokeWidth: 1.5, className: "text-white/90" };
   switch (iconId) {
-    case "strength":
-      return (
-        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
-          <path d="M4 10h2m12 0h2M8 8v4m8-4v4M6 8h2v4H6zm10 0h2v4h-2z" />
-          <path d="M8 10h8" />
-        </svg>
-      );
-    case "protein":
-      return (
-        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
-          <path d="M8 3h8m-1 0v4l3 5a5 5 0 0 1-4.4 7H10.4A5 5 0 0 1 6 12l3-5V3" />
-          <path d="M9 10h6" />
-        </svg>
-      );
-    case "sleep":
-      return (
-        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
-          <path d="M15.5 4.5a7 7 0 1 0 4 10.8A8 8 0 1 1 15.5 4.5z" />
-          <path d="M8 6h2M7 9h3" />
-        </svg>
-      );
-    case "biomarkers":
-      return (
-        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
-          <path d="M4 15h3l2-4 3 6 2-5 2 3h4" />
-          <path d="M4 6h16M4 20h16" />
-        </svg>
-      );
-    case "habits":
-      return (
-        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
-          <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" />
-          <path d="m8.5 12 2.2 2.2L15.8 9" />
-        </svg>
-      );
-    case "cognitive":
-      return (
-        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
-          <path d="M8.5 9.5a3.5 3.5 0 0 1 7 0v5a3.5 3.5 0 0 1-7 0z" />
-          <path d="M7 12h-2m14 0h-2M12 6V4m0 16v-2" />
-        </svg>
-      );
-    case "mobility":
-      return (
-        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
-          <circle cx="12" cy="5" r="2" />
-          <path d="M12 7v5l3 3m-3-3-3 3M9 21l3-6 3 6" />
-        </svg>
-      );
-    default:
-      return (
-        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
-          <circle cx="12" cy="12" r="6" />
-        </svg>
-      );
+    case "Dumbbell": return <Dumbbell {...props} />;
+    case "Beef": return <Beef {...props} />;
+    case "Moon": return <Moon {...props} />;
+    case "Activity": return <Activity {...props} />;
+    case "Cpu": return <Cpu {...props} />;
+    case "Brain": return <Brain {...props} />;
+    case "Accessibility": return <Accessibility {...props} />;
+    default: return <Activity {...props} />;
   }
 }
 
@@ -209,17 +168,46 @@ function preloadGenesisFrames(): Promise<HTMLImageElement[]> {
         emitFrameProgress();
         resolve(img);
       };
-      img.onerror = () => reject(new Error(`Failed to load frame: ${img.src}`));
+      // RESILIENT LOADING: If a frame fails, we resolve nicely but the image will be broken.
+      // We'll handle filling gaps in the post-processing step if needed, or simply let the canvas draw nothing/previous frame.
+      // For now, we resolve so the Promise.all doesn't fail.
+      img.onerror = () => {
+        console.warn(`Failed to load frame: ${img.src}`);
+        framePreloadState.loadedCount += 1;
+        emitFrameProgress();
+        resolve(img); // Resolve with the broken image object
+      };
     });
   });
 
   framePreloadState.promise = Promise.all(promises)
     .then((imgs) => {
+      // POST-PROCESS: Fill gaps (broken images) with the nearest previous valid image
+      for (let i = 0; i < imgs.length; i++) {
+        // detection of broken image: naturalWidth is 0
+        if (imgs[i].naturalWidth === 0) {
+          // Find closest previous valid
+          let replacement = imgs[i];
+          for (let j = i - 1; j >= 0; j--) {
+            if (imgs[j].naturalWidth > 0) {
+              replacement = imgs[j];
+              break;
+            }
+          }
+          // If no previous valid (e.g. frame 0 fails), look ahead? 
+          // Or just leave it broken if frame 0 fails (critial error).
+          // But assuming frame 0 exists based on user feedback.
+          if (replacement.naturalWidth > 0) {
+            imgs[i] = replacement;
+          }
+        }
+      }
       framePreloadState.images = imgs;
       framePreloadState.ready = true;
       return imgs;
     })
     .catch((error) => {
+      // Should not happen with the resilient logic, but as a safety net:
       framePreloadState.promise = null;
       framePreloadState.ready = false;
       framePreloadState.loadedCount = 0;
@@ -248,12 +236,15 @@ function AnimatedStat({
   delay: number;
 }) {
   const [count, setCount] = useState(0);
-  const [started, setStarted] = useState(false);
+  const [hasRun, setHasRun] = useState(false);
 
   useEffect(() => {
-    if (!active || started) return;
+    if ((!active && !hasRun) || hasRun) return;
+
+    // Once active, we mark as running and don't stop even if active becomes false (scrolling past)
+    setHasRun(true);
+
     const timer = setTimeout(() => {
-      setStarted(true);
       const duration = 1200;
       const startTime = performance.now();
       function tick(now: number) {
@@ -266,14 +257,9 @@ function AnimatedStat({
       requestAnimationFrame(tick);
     }, delay);
     return () => clearTimeout(timer);
-  }, [active, started, value, delay]);
+  }, [active, hasRun, value, delay]);
 
-  useEffect(() => {
-    if (!active) {
-      setStarted(false);
-      setCount(0);
-    }
-  }, [active]);
+  // Removed the reset logic so stats stick once viewed
 
   return (
     <div>
@@ -299,6 +285,12 @@ export default function GenesisReveal() {
   const [currentFrame, setCurrentFrame] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [scrollReady, setScrollReady] = useState(false);
+  const [selectedCapability, setSelectedCapability] = useState<CapabilityItem | null>(null);
+  const [activeIntegration, setActiveIntegration] = useState<'none' | 'cal' | 'agent'>('none');
+
+  // Placeholder Config - USER TO REPLACE
+  const CAL_LINK = "https://cal.com/aldoolivas";
+  const AGENT_ID = "replace-with-your-elevenlabs-agent-id";
 
   // --- Refs ---
   const containerRef = useRef<HTMLDivElement>(null);
@@ -396,13 +388,7 @@ export default function GenesisReveal() {
   // --- Section opacities ---
   const sectionOpacities = useMemo(() => {
     const activeProgress = scrollReady ? scrollProgress : 0;
-    return SECTIONS.map((section, index) => {
-      const baseOpacity = getSectionOpacity(activeProgress, section);
-      if (index !== 5) return baseOpacity;
-      if (activeProgress <= 0.94) return baseOpacity;
-      const releaseFactor = Math.max(0, 1 - (activeProgress - 0.94) / 0.06);
-      return baseOpacity * releaseFactor;
-    });
+    return SECTIONS.map((section) => getSectionOpacity(activeProgress, section));
   }, [scrollProgress, scrollReady]);
 
   const scrollToSystem = useCallback(() => {
@@ -426,6 +412,12 @@ export default function GenesisReveal() {
     () => buildAmbientStyle(TOKENS.bgPrimary, SECTION_BACKGROUNDS.duo),
     []
   );
+
+  const textures = [
+    "/assets/abstract_tech_texture_1.png",
+    "/assets/abstract_tech_texture_2.png",
+    "/assets/abstract_tech_texture_3.png",
+  ];
 
   // ═══════════════════════════════════════════════════════════════
   // LOADING SCREEN
@@ -453,11 +445,13 @@ export default function GenesisReveal() {
     );
   }
 
+
   // ═══════════════════════════════════════════════════════════════
   // MAIN RENDER
   // ═══════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen text-white" style={{ background: TOKENS.bg }}>
+      <GenesisAudio active={loaded} />
       {/* ── SCROLL CONTAINER ── */}
       <div ref={containerRef} style={{ height: `${SCROLL_HEIGHT_VH}vh` }} className="relative">
         {/* ── STICKY VIEWPORT ── */}
@@ -563,8 +557,8 @@ export default function GenesisReveal() {
                     value={stat.value}
                     unit={stat.unit}
                     label={stat.label}
-                    active={sectionOpacities[2] > 0.3}
-                    delay={i * 300}
+                    active={sectionOpacities[2] > 0.1}
+                    delay={i * 150}
                   />
                 ))}
               </div>
@@ -726,21 +720,45 @@ export default function GenesisReveal() {
             decisiones concretas, sostenibles y personalizadas.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-10 md:mt-12">
-            {CAPABILITIES.map((capability) => (
-              <article key={capability.tag} className="capability-card liquid-card">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="capability-tag">{capability.tag}</p>
-                  <span className="icon-chip">{getCapabilityIcon(capability.icon)}</span>
-                </div>
-                <h3 className="font-mono text-white text-lg md:text-xl mt-3 leading-tight">
-                  {capability.title}
-                </h3>
-                <p className="text-sm text-white/65 leading-relaxed mt-3">
-                  {capability.desc}
-                </p>
-              </article>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-5 mt-10 md:mt-12">
+            {CAPABILITIES.map((capability, index) => {
+              // 2-3-2 Layout Pattern for 7 items
+              // Row 1 (2 items): Span 3
+              // Row 2 (3 items): Span 2
+              // Row 3 (2 items): Span 3
+              const spanClass = [0, 1, 5, 6].includes(index) ? "lg:col-span-3" : "lg:col-span-2";
+
+              return (
+                <article
+                  key={capability.tag}
+                  onClick={() => setSelectedCapability(capability)}
+                  className={`capability-card liquid-card group relative overflow-hidden ${spanClass} cursor-pointer`}
+                >
+                  {/* Background Texture - Cyclical Assignment */}
+                  <div
+                    className="absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none transition-opacity duration-300 group-hover:opacity-20"
+                    style={{
+                      backgroundImage: `url(${textures[index % textures.length]})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}
+                  />
+
+                  <div className="relative z-10 flex items-center justify-between gap-3">
+                    <p className="capability-tag">{capability.tag}</p>
+                    <span className="icon-chip bg-white/5 border-white/10 group-hover:border-vite/50 group-hover:bg-vite/10 transition-all">
+                      {getCapabilityIcon(capability.icon)}
+                    </span>
+                  </div>
+                  <h3 className="relative z-10 font-mono text-white text-lg md:text-xl mt-3 leading-tight group-hover:text-vite transition-colors">
+                    {capability.title}
+                  </h3>
+                  <p className="relative z-10 text-sm text-white/65 leading-relaxed mt-3 group-hover:text-white/80 transition-colors">
+                    {capability.desc}
+                  </p>
+                </article>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -761,43 +779,337 @@ export default function GenesisReveal() {
             {DUO_COPY.subtitle}
           </p>
 
-          <div className="duo-placeholder-visual liquid-card mt-10 mb-8 md:mt-12 md:mb-10">
-            <span className="capability-tag">{DUO_COPY.visualTag}</span>
-            <div className="duo-core-node mt-5">CORE</div>
-            <div className="duo-connector" />
-            <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-white/35 mt-4">
-              Arquitectura colaborativa en tiempo real
+          {/* New Duo Split Layout */}
+          <div className="mt-12 relative flex flex-col md:flex-row gap-6 md:gap-0 md:items-stretch">
+
+            {/* Left: Aldo */}
+            <div className="flex-1 liquid-card md:rounded-r-none md:border-r-0 border-b md:border-b border-l border-t rounded-2xl md:rounded-l-2xl p-8 flex flex-col relative group">
+              {/* Visual placeholder for Aldo until user provides image */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-vite/10 to-transparent blur-3xl -z-10" />
+              <p className="capability-tag text-vite">{DUO_COPY.aldo.label}</p>
+              <h3 className="font-mono text-3xl text-white mt-2">{DUO_COPY.aldo.heading}</h3>
+              <div className="mt-6 flex-grow text-white/70 text-sm leading-relaxed">
+                {DUO_COPY.aldo.body}
+              </div>
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <div className="bg-white/5 w-full aspect-[4/3] rounded-lg flex items-center justify-center border border-white/5">
+                  <span className="text-xs font-mono text-white/30 uppercase tracking-widest">[ Foto: Aldo ]</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Central Connector (Desktop only) */}
+            <div className="hidden md:flex flex-col items-center justify-center relative z-20 w-12 -mx-6 pointer-events-none">
+              <div className="w-12 h-12 rounded-full bg-black border border-vite flex items-center justify-center shadow-[0_0_20px_rgba(108,59,255,0.4)] z-10">
+                <div className="w-3 h-3 bg-vite rounded-full animate-pulse" />
+              </div>
+            </div>
+
+            {/* Mobile Connector */}
+            <div className="md:hidden flex items-center justify-center -my-3 z-20 pointer-events-none">
+              <div className="px-4 py-1 rounded-full bg-black border border-vite text-[10px] font-mono tracking-widest text-vite shadow-[0_0_15px_rgba(108,59,255,0.3)]">
+                SYNTHESIS
+              </div>
+            </div>
+
+            {/* Right: Genesis */}
+            <div className="flex-1 liquid-card md:rounded-l-none md:border-l-0 border-b md:border-b border-r border-t rounded-2xl md:rounded-r-2xl p-8 flex flex-col relative group text-right items-end">
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-white/10 to-transparent blur-3xl -z-10" />
+              <p className="capability-tag text-white/50">{DUO_COPY.genesis.label}</p>
+              <h3 className="font-mono text-3xl text-white mt-2">{DUO_COPY.genesis.heading}</h3>
+              <div className="mt-6 flex-grow text-white/70 text-sm leading-relaxed text-right">
+                {DUO_COPY.genesis.body}
+              </div>
+              <div className="mt-6 pt-6 border-t border-white/10 w-full">
+                <div className="bg-white/5 w-full aspect-[4/3] rounded-lg flex items-center justify-center border border-white/5 ml-auto">
+                  <span className="text-xs font-mono text-white/30 uppercase tracking-widest">[ Foto: Genesis ]</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Synthesis Statement */}
+          <div className="text-center mt-8 md:mt-12">
+            <p className="font-mono text-sm md:text-base text-vite tracking-wide">
+              {DUO_COPY.synthesis}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
-            <article className="duo-panel liquid-card">
-              <p className="capability-tag">{DUO_COPY.aldo.label}</p>
-              <h3 className="font-mono text-white text-2xl mt-4">{DUO_COPY.aldo.heading}</h3>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed mt-4">
-                {DUO_COPY.aldo.body}
-              </p>
-            </article>
+        </div >
+      </div >
 
-            <article className="duo-panel liquid-card">
-              <p className="capability-tag">{DUO_COPY.genesis.label}</p>
-              <h3 className="font-mono text-vite text-2xl mt-4">{DUO_COPY.genesis.heading}</h3>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed mt-4">
-                {DUO_COPY.genesis.body}
-              </p>
-            </article>
-          </div>
+      {/* ═══════════════════════════════════════════════════════════════
+          CTA / CONTACT SECTION
+          ═══════════════════════════════════════════════════════════════ */}
+      <div className="vite-section vite-frame relative overflow-hidden" style={{ background: TOKENS.bgPrimary }}>
+        {/* Ambient Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-vite/5 pointer-events-none" />
 
-          <p className="font-mono text-vite text-base md:text-lg mt-8 md:mt-10 text-center">
-            {DUO_COPY.synthesis}
+        <div className="max-w-content mx-auto px-6 md:px-10 py-24 md:py-32 relative z-10">
+          <h2 className="vite-h2 text-white text-center mb-4" style={{ fontSize: "clamp(24px, 3.5vw, 40px)" }}>
+            {CONTACT_SECTION.title}
+          </h2>
+          <p className="text-white/60 text-center text-sm md:text-base mb-12">
+            {CONTACT_SECTION.subtitle}
           </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* Human Option */}
+            <button
+              onClick={() => {
+                console.log("Human CTA clicked");
+                setActiveIntegration('cal');
+              }}
+              className="group liquid-card p-8 rounded-2xl flex flex-col items-center text-center hover:border-white/40 transition-all cursor-pointer"
+            >
+              <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <Calendar size={32} className="text-white/80 group-hover:text-white" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-mono text-xl text-white mb-3">{CONTACT_SECTION.human.title}</h3>
+              <p className="text-white/60 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
+                {CONTACT_SECTION.human.desc}
+              </p>
+              <span className="mt-auto inline-flex items-center gap-2 text-xs font-mono tracking-widest uppercase border-b border-white/30 pb-1 group-hover:border-white group-hover:text-white transition-colors">
+                {CONTACT_SECTION.human.cta}
+              </span>
+            </button>
+
+            {/* AI Option */}
+            <button
+              onClick={() => setActiveIntegration('agent')}
+              className="group liquid-card p-8 rounded-2xl flex flex-col items-center text-center border-vite/30 hover:border-vite transition-all cursor-pointer relative overflow-hidden"
+            >
+              {/* Subtle AI Glow */}
+              <div className="absolute inset-0 bg-vite/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              <div className="w-16 h-16 rounded-full bg-vite/10 border border-vite/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 relative z-10">
+                <MessageSquare size={32} className="text-vite group-hover:text-white" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-mono text-xl text-white mb-3 relative z-10">{CONTACT_SECTION.ai.title}</h3>
+              <p className="text-white/60 text-sm leading-relaxed mb-8 max-w-xs mx-auto relative z-10">
+                {CONTACT_SECTION.ai.desc}
+              </p>
+              <span className="mt-auto relative z-10 inline-flex items-center gap-2 text-xs font-mono tracking-widest uppercase text-vite border-b border-vite/30 pb-1 group-hover:border-vite group-hover:text-white transition-colors">
+                {CONTACT_SECTION.ai.cta}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
+          CAPABILITY DETAILS MODAL
+          ═══════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {selectedCapability && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6"
+          >
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+              onClick={() => setSelectedCapability(null)}
+            />
+
+            {/* Modal Content */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-4xl bg-[#0a0a0a] border border-vite/30 rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(108,59,255,0.15)] flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh]"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedCapability(null)}
+                className="absolute top-4 right-4 md:top-6 md:right-6 z-20 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+
+              {/* Left Column: Identify */}
+              <div className="w-full md:w-5/12 p-8 md:p-10 bg-gradient-to-br from-vite/5 to-transparent flex flex-col justify-between border-b md:border-b-0 md:border-r border-white/10 relative overflow-hidden">
+                {/* Decorative background blur */}
+                <div className="absolute top-0 left-0 w-64 h-64 bg-vite/10 blur-[100px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+
+                <div>
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-vite/10 border border-vite/20 text-vite mb-6">
+                    {getCapabilityIcon(selectedCapability.icon)}
+                  </div>
+                  <p className="capability-tag text-vite/80 mb-3">{selectedCapability.tag}</p>
+                  <h3 className="font-mono text-2xl md:text-3xl text-white leading-tight">
+                    {selectedCapability.title}
+                  </h3>
+                  <div className="w-12 h-1 bg-vite mt-6" />
+                </div>
+
+                <div className="mt-8 md:mt-auto">
+                  <p className="font-mono text-sm text-white/60 uppercase tracking-widest mb-2">Principios</p>
+                  <p className="text-lg text-white font-medium leading-relaxed">
+                    {selectedCapability.details.subtitle}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Column: Deep Dive */}
+              <div className="w-full md:w-7/12 p-8 md:p-10 flex flex-col overflow-y-auto">
+
+                {/* Problem / Solution Block */}
+                <div className="space-y-8">
+                  <div>
+                    <h4 className="flex items-center gap-2 font-mono text-sm text-red-400 uppercase tracking-wider mb-3">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> El Problema
+                    </h4>
+                    <p className="text-white/80 leading-relaxed text-base md:text-lg">
+                      {selectedCapability.details.problem}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="flex items-center gap-2 font-mono text-sm text-vite uppercase tracking-wider mb-3">
+                      <span className="w-1.5 h-1.5 rounded-full bg-vite" /> La Solución NGX
+                    </h4>
+                    <p className="text-white/80 leading-relaxed text-base md:text-lg">
+                      {selectedCapability.details.solution}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Key Stat Box */}
+                <div className="mt-10 p-6 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-mono text-xs text-white/50 uppercase tracking-widest mb-1">
+                      {selectedCapability.details.statLabel}
+                    </p>
+                    <p className="text-3xl md:text-4xl font-mono font-bold text-white">
+                      {selectedCapability.details.stat}
+                    </p>
+                  </div>
+                  <div className="opacity-20 text-vite">
+                    <Activity size={48} strokeWidth={1} />
+                  </div>
+                </div>
+
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          CAL.COM MODAL
+          ═══════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {activeIntegration === 'cal' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6"
+          >
+            <div
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              onClick={() => setActiveIntegration('none')}
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-5xl h-[85vh] bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
+                <p className="font-mono text-sm tracking-widest">ESTRATEGIA HUMANA</p>
+                <button onClick={() => setActiveIntegration('none')}>
+                  <X className="text-white/60 hover:text-white transition-colors" />
+                </button>
+              </div>
+              <div className="flex-grow w-full h-full bg-white">
+                {/* Cal Embed Iframe */}
+                <iframe
+                  src={CAL_LINK}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  title="Cal.com Scheduling"
+                ></iframe>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          ELEVENLABS AGENT MODAL
+          ═══════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {activeIntegration === 'agent' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6"
+          >
+            <div
+              className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+              onClick={() => setActiveIntegration('none')}
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md bg-black border border-vite/50 rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(108,59,255,0.2)] flex flex-col h-[700px] max-h-[90vh]"
+            >
+              {/* Terminal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-vite/20 bg-vite/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-vite animate-pulse" />
+                  <p className="font-mono text-sm tracking-widest text-vite">GENESIS CORE</p>
+                </div>
+                <button onClick={() => setActiveIntegration('none')}>
+                  <X className="text-white/60 hover:text-white transition-colors" />
+                </button>
+              </div>
+
+              {/* Agent Container */}
+              <div className="flex-grow w-full relative bg-black/50 flex flex-col items-center justify-center p-8 text-center">
+                {/* Placeholder for ElevenLabs Widget */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
+                  <Brain size={120} strokeWidth={0.5} className="text-vite" />
+                </div>
+
+                <p className="text-white/60 text-sm mb-6 relative z-10">
+                  Conectando con el núcleo neuronal...
+                </p>
+
+                {/* INSTRUCTION FOR USER */}
+                <div className="bg-vite/10 border border-vite/30 p-4 rounded-lg text-left w-full relative z-10">
+                  <p className="text-xs text-vite font-mono mb-2">[ SYSTEM_MESSAGE ]</p>
+                  <p className="text-xs text-white/70 font-mono">
+                    Para activar el agente, inserta tu <code>&lt;elevenlabs-convai&gt;</code> script aquí en el código.
+                    <br /><br />
+                    ID del Agente requerida: <span className="text-white">{AGENT_ID}</span>
+                  </p>
+                </div>
+
+                {/* Example of where the widget code would go */}
+                {/* 
+                      <elevenlabs-convai agent-id={AGENT_ID}></elevenlabs-convai>
+                      <script src="https://elevenlabs.io/convai-widget/index.js" async type="text/javascript"></script>
+                    */}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════════════════════════════════════════════════════════════
           FOOTER
           ═══════════════════════════════════════════════════════════════ */}
-      <div className="vite-section vite-frame" style={{ background: TOKENS.bg }}>
+      < div className="vite-section vite-frame" style={{ background: TOKENS.bg }
+      }>
         <div className="max-w-content mx-auto px-6 md:px-10 py-12 flex items-center justify-between">
           <p className="font-mono text-sm">
             <span className="text-white">NGX</span>{" "}
@@ -807,7 +1119,7 @@ export default function GenesisReveal() {
             &copy; 2026 NGX Inc. Performance &amp; Longevity.
           </p>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

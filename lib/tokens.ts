@@ -20,6 +20,18 @@ export const TOKENS = {
   grey: "#827a89",
 } as const;
 
+export const AUDIO = {
+  // TODO: Replace with actual ElevenLabs URL provided by user
+  genesisVoiceId: "PLACEHOLDER_ID",
+  baseUrl: "https://api.elevenlabs.io/v1/text-to-speech",
+} as const;
+
+export const AUDIO_CONFIG = {
+  fadeDuration: 2000,
+  bgVolume: 0.3,
+  voiceVolume: 1.0,
+} as const;
+
 export const POST_SCROLL_THEME = {
   violetBase: "#6D00FF",
   violetSoft: "rgba(109, 0, 255, 0.2)",
@@ -160,64 +172,122 @@ export const COPY = {
 // POST-SCROLL: SYSTEM + CAPABILITIES + DUO
 // ═══════════════════════════════════════════════════════════════
 
+export interface CapabilityDetails {
+  subtitle: string;
+  problem: string;
+  solution: string;
+  stat: string;
+  statLabel: string;
+}
+
 export interface CapabilityItem {
   icon: CapabilityIconId;
   tag: string;
   title: string;
   desc: string;
+  details: CapabilityDetails;
 }
 
 export type CapabilityIconId =
-  | "strength"
-  | "protein"
-  | "sleep"
-  | "biomarkers"
-  | "habits"
-  | "cognitive"
-  | "mobility";
+  | "Dumbbell"
+  | "Beef"
+  | "Moon"
+  | "Activity"
+  | "Brain"
+  | "Cpu"
+  | "Accessibility";
 
 export const CAPABILITIES: CapabilityItem[] = [
   {
-    icon: "strength",
+    icon: "Dumbbell",
     tag: "CAP_01",
     title: "Entrenamiento de Fuerza y Resistencia",
     desc: "Programo estímulos progresivos con foco en capacidad funcional, potencia y longevidad muscular.",
+    details: {
+      subtitle: "El músculo es el órgano de la longevidad.",
+      problem: "La conversación dominante es de restricción y pérdida de peso. El problema no es el exceso de grasa; es la falta de músculo.",
+      solution: "El músculo es tu armadura metabólica y el predictor #1 de mortalidad. Programo estímulos progresivos para maximizar tu 'Musclespan'.",
+      stat: "-66%",
+      statLabel: "Riesgo Mortalidad (Baja Fuerza)",
+    },
   },
   {
-    icon: "protein",
+    icon: "Beef",
     tag: "CAP_02",
     title: "Nutrición Centrada en Proteínas",
     desc: "Alineo ingesta proteica, timing y estructura nutricional para preservar y construir masa magra.",
+    details: {
+      subtitle: "Superando la resistencia anabólica.",
+      problem: "Con la edad, el cuerpo se vuelve menos sensible a los estímulos para construir músculo. Un adulto de 50 años necesita más proteína que uno de 25.",
+      solution: "Estrategia centrada en proteínas. Objetivo basado en evidencia: ≥1.6 g/kg/día para maximizar la masa magra.",
+      stat: "≥1.6g",
+      statLabel: "Proteína por kg/día",
+    },
   },
   {
-    icon: "sleep",
+    icon: "Moon",
     tag: "CAP_03",
-    title: "Optimización de la Recuperación y el Sueño",
-    desc: "Integro calidad de sueño, carga de entrenamiento y estrés para sostener progreso sin burnout.",
+    title: "Recuperación Optimizada",
+    desc: "Orquesto sueño, estrés y recuperación para que cada sesión se convierta en adaptación real.",
+    details: {
+      subtitle: "Recuperación no negociable.",
+      problem: "El estrés crónico y el mal sueño degradan el músculo a través del cortisol. Sin recuperación, no hay adaptación.",
+      solution: "Orquesto sueño y gestión del estrés para optimizar la síntesis de proteínas y la regulación hormonal.",
+      stat: "100%",
+      statLabel: "Requisito de Adaptación",
+    },
   },
   {
-    icon: "biomarkers",
+    icon: "Activity",
     tag: "CAP_04",
-    title: "Análisis de Biomarcadores y Datos",
-    desc: "Transformo biometría, performance y tendencias en decisiones accionables y personalizadas.",
+    title: "Medición Real",
+    desc: "Opero con biomarcadores y función. No persigo peso; optimizo capacidad física y longevidad.",
+    details: {
+      subtitle: "Medicina de precisión aplicada.",
+      problem: "El peso corporal es una métrica incompleta. Lo que no se mide con precisión, no se puede mejorar.",
+      solution: "Opero con biomarcadores funcionales. La fuerza de agarre y la velocidad de marcha son predictores más potentes de longevidad que el IMC.",
+      stat: "KPI",
+      statLabel: "Grip Strength & Vo2 Max",
+    },
   },
   {
-    icon: "habits",
+    icon: "Cpu",
     tag: "CAP_05",
-    title: "Formación de Hábitos y Consistencia",
-    desc: "Diseño micro-rutinas ejecutables para convertir intención en adherencia diaria real.",
+    title: "Sistemas & Hábitos",
+    desc: "Diseño entornos y rutinas que eliminan la fricción. La motivación es efímera; el sistema es permanente.",
+    details: {
+      subtitle: "Consistencia sobre intensidad.",
+      problem: "La motivación es efímera. La mayoría de los programas fallan por falta de adherencia real.",
+      solution: "Construyo sistemas, no retos. La adherencia es la única variable que garantiza el interés compuesto en tu salud.",
+      stat: "365",
+      statLabel: "Días de Ejecución",
+    },
   },
   {
-    icon: "cognitive",
+    icon: "Brain",
     tag: "CAP_06",
-    title: "Salud Cognitiva y Manejo del Estrés",
-    desc: "Coordino protocolos de enfoque, regulación y recuperación neural para rendimiento sostenido.",
+    title: "Salud Cognitiva",
+    desc: "Potencio el eje músculo-cerebro. El ejercicio es el fertilizante neuronal más potente que existe.",
+    details: {
+      subtitle: "Crosstalk Músculo-Cerebro.",
+      problem: "La disfunción muscular contribuye al deterioro cognitivo. El cuerpo y la mente no son sistemas separados.",
+      solution: "Mioquinas como BDNF e Irisina, liberadas durante la contracción, promueven la neurogénesis y plasticidad cerebral.",
+      stat: "BDNF",
+      statLabel: "Fertilizante Cerebral",
+    },
   },
   {
-    icon: "mobility",
+    icon: "Accessibility",
     tag: "CAP_07",
-    title: "Movilidad y Funcionalidad a Largo Plazo",
-    desc: "Priorizo rango de movimiento, estabilidad y resiliencia para mantener autonomía con los años.",
+    title: "Movilidad & Estructura",
+    desc: "Construyo la base mecánica para que tu cuerpo opere sin dolor ni límites durante décadas.",
+    details: {
+      subtitle: "Infraestructura para la vida.",
+      problem: "La fragilidad es el enemigo. Un músculo fuerte construye un hueso fuerte, previniendo la osteoporosis.",
+      solution: "Entrenamiento enfocado en rango de movimiento bajo carga. El músculo y el hueso se comunican constantemente.",
+      stat: "-30%",
+      statLabel: "Riesgo Mortalidad (Baja Masa)",
+    },
   },
 ];
 
@@ -264,7 +334,6 @@ export interface DuoColumn {
 export interface DuoCopy {
   label: string;
   subtitle: string;
-  visualTag: string;
   aldo: DuoColumn;
   genesis: DuoColumn;
   synthesis: string;
@@ -274,7 +343,6 @@ export const DUO_COPY: DuoCopy = {
   label: "EL DÚO: ARQUITECTO HUMANO & SISTEMA DE IA",
   subtitle:
     "La ventaja no es elegir entre humano o máquina. La ventaja es su sinergia de precisión aplicada.",
-  visualTag: "NGX HYBRID CORE",
   aldo: {
     label: "ARQUITECTO HUMANO",
     heading: "Aldo",
@@ -287,3 +355,21 @@ export const DUO_COPY: DuoCopy = {
   },
   synthesis: "NGX HYBRID = ciencia + adherencia.",
 };
+
+export const CONTACT_SECTION = {
+  title: "Inicia tu Protocolo",
+  subtitle: "Dos caminos para dar el primer paso.",
+  human: {
+    title: "Estrategia Humana",
+    desc: "Agenda una llamada de 15 min con un especialista para evaluar tu caso.",
+    cta: "AGENDAR LLAMADA",
+    icon: "Calendar",
+  },
+  ai: {
+    title: "Interfaz Genesis",
+    desc: "Habla directamente con mi núcleo de IA. Respuestas inmediatas sobre costos y metodología.",
+    cta: "INICIAR CHAT",
+    icon: "Sparkles",
+  },
+};
+
