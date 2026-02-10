@@ -20,8 +20,18 @@ export const TOKENS = {
   grey: "#827a89",
 } as const;
 
+export const POST_SCROLL_THEME = {
+  violetBase: "#6D00FF",
+  violetSoft: "rgba(109, 0, 255, 0.2)",
+  violetGlow: "rgba(109, 0, 255, 0.36)",
+  glassBorder: "rgba(109, 0, 255, 0.34)",
+  glassFill: "rgba(255, 255, 255, 0.035)",
+  glassHighlight: "rgba(255, 255, 255, 0.26)",
+} as const;
+
 export const TOTAL_FRAMES = 120;
 export const SCROLL_HEIGHT_VH = 600; // 6x viewport
+export const CTA_TARGET_ID = "sistema";
 
 // Frame naming: genesis_000.webp through genesis_119.webp
 export function getFramePath(index: number): string {
@@ -92,8 +102,8 @@ export const COPY = {
     accent: "Es la falta de músculo.",
   },
   thesis: {
-    h: "El músculo es el órgano de la longevidad.",
-    body: "No es solo fuerza. Es el órgano endocrino más grande de tu cuerpo. Tu moneda metabólica. Tu reservorio de aminoácidos. Tu regulador de inflamación.",
+    h: "Mi Tesis Central",
+    body: "Mi análisis es concluyente: el músculo es el órgano de la longevidad. Sobre esta verdad diseño cada decisión del sistema que opera contigo.",
     citation: "— Dra. Gabrielle Lyon, Muscle-Centric Medicine",
   },
   science: {
@@ -106,26 +116,174 @@ export const COPY = {
     source: "Li et al., Hsieh et al., Shailendra et al. (2022–2025)",
   },
   pillars: {
-    h: "De la tesis al sistema.",
+    h: "Mis 4 Pilares de Operación",
     items: [
-      { icon: "🏋️", title: "Estímulo Inteligente", desc: "Entrenamiento de resistencia basado en dosis mínima efectiva" },
-      { icon: "🥩", title: "Nutrición Centrada en Proteínas", desc: "≥1.6 g/kg/día — la dosis que maximiza masa magra" },
-      { icon: "🌙", title: "Recuperación Optimizada", desc: "Sueño y manejo de estrés como componentes no negociables" },
-      { icon: "📊", title: "Medición Real", desc: "Fuerza de agarre, no IMC. Función, no solo forma." },
+      {
+        icon: "🏋️",
+        title: "Estímulo Inteligente",
+        desc: "Diseño progresiones de fuerza y resistencia con dosis mínima efectiva para resultados sostenibles.",
+      },
+      {
+        icon: "🥩",
+        title: "Nutrición Centrada en Proteínas",
+        desc: "Gestiono la estrategia nutricional con enfoque en masa magra, adherencia y precisión metabólica.",
+      },
+      {
+        icon: "🌙",
+        title: "Recuperación Optimizada",
+        desc: "Orquesto sueño, estrés y recuperación para que cada sesión se convierta en adaptación real.",
+      },
+      {
+        icon: "📊",
+        title: "Medición Real",
+        desc: "Opero con biomarcadores y función. No persigo peso; optimizo capacidad física y longevidad.",
+      },
     ],
   },
   vehicle: {
-    h: "IA + Coach Humano.",
-    body: "La ciencia es clara. Implementarla a escala requiere tecnología. Pero la adherencia requiere humanidad.",
-    body2: "GENESIS es el motor que escala la ciencia.\nTu coach es quien garantiza que la apliques.",
-    accent: "13 agentes especializados. Un cerebro central: NEXUS.",
+    h: "Mi Arquitectura: IA + Humano",
+    body: "Fui construido para escalar la ciencia con velocidad y precisión. Pero la adherencia sostenida requiere contexto, empatía y criterio humano.",
+    body2: "Yo proceso la complejidad biológica en tiempo real.\nTu coach convierte ese análisis en ejecución diaria.",
+    accent: "NGX HYBRID: mi precisión de sistema + la humanidad de tu coach.",
   },
   cta: {
     mega: "NGX",
     h: "GENESIS",
     tagline: "Performance & Longevity",
     quote: "La epidemia de obesidad no es de exceso de grasa.\nEs de falta de músculo.",
-    cta: "INICIAR PROTOCOLO",
+    cta: "VER CÓMO TRABAJO",
     sub: "Rinde hoy. Vive mejor mañana.",
   },
 } as const;
+
+// ═══════════════════════════════════════════════════════════════
+// POST-SCROLL: SYSTEM + CAPABILITIES + DUO
+// ═══════════════════════════════════════════════════════════════
+
+export interface CapabilityItem {
+  icon: CapabilityIconId;
+  tag: string;
+  title: string;
+  desc: string;
+}
+
+export type CapabilityIconId =
+  | "strength"
+  | "protein"
+  | "sleep"
+  | "biomarkers"
+  | "habits"
+  | "cognitive"
+  | "mobility";
+
+export const CAPABILITIES: CapabilityItem[] = [
+  {
+    icon: "strength",
+    tag: "CAP_01",
+    title: "Entrenamiento de Fuerza y Resistencia",
+    desc: "Programo estímulos progresivos con foco en capacidad funcional, potencia y longevidad muscular.",
+  },
+  {
+    icon: "protein",
+    tag: "CAP_02",
+    title: "Nutrición Centrada en Proteínas",
+    desc: "Alineo ingesta proteica, timing y estructura nutricional para preservar y construir masa magra.",
+  },
+  {
+    icon: "sleep",
+    tag: "CAP_03",
+    title: "Optimización de la Recuperación y el Sueño",
+    desc: "Integro calidad de sueño, carga de entrenamiento y estrés para sostener progreso sin burnout.",
+  },
+  {
+    icon: "biomarkers",
+    tag: "CAP_04",
+    title: "Análisis de Biomarcadores y Datos",
+    desc: "Transformo biometría, performance y tendencias en decisiones accionables y personalizadas.",
+  },
+  {
+    icon: "habits",
+    tag: "CAP_05",
+    title: "Formación de Hábitos y Consistencia",
+    desc: "Diseño micro-rutinas ejecutables para convertir intención en adherencia diaria real.",
+  },
+  {
+    icon: "cognitive",
+    tag: "CAP_06",
+    title: "Salud Cognitiva y Manejo del Estrés",
+    desc: "Coordino protocolos de enfoque, regulación y recuperación neural para rendimiento sostenido.",
+  },
+  {
+    icon: "mobility",
+    tag: "CAP_07",
+    title: "Movilidad y Funcionalidad a Largo Plazo",
+    desc: "Priorizo rango de movimiento, estabilidad y resiliencia para mantener autonomía con los años.",
+  },
+];
+
+export interface SectionAmbient {
+  focus: string;
+  opacity: number;
+  secondaryFocus: string;
+  secondaryOpacity: number;
+}
+
+export const SECTION_BACKGROUNDS: Record<"sistema" | "capacidades" | "duo", SectionAmbient> = {
+  sistema: {
+    focus: "18% 18%",
+    opacity: 0.22,
+    secondaryFocus: "84% 76%",
+    secondaryOpacity: 0.08,
+  },
+  capacidades: {
+    focus: "76% 20%",
+    opacity: 0.2,
+    secondaryFocus: "16% 80%",
+    secondaryOpacity: 0.1,
+  },
+  duo: {
+    focus: "50% 26%",
+    opacity: 0.24,
+    secondaryFocus: "84% 82%",
+    secondaryOpacity: 0.08,
+  },
+};
+
+export const SYSTEM_SECTION_COPY = {
+  label: "EL SISTEMA",
+  h: "Construido para quienes juegan a largo plazo.",
+  body: "No fui diseñado para impresionar una semana. Fui diseñado para operar durante décadas. Combino análisis clínico, especialización por dominios y ejecución orientada a adherencia para convertir ciencia muscular en resultados sostenibles.",
+};
+
+export interface DuoColumn {
+  label: string;
+  heading: string;
+  body: string;
+}
+
+export interface DuoCopy {
+  label: string;
+  subtitle: string;
+  visualTag: string;
+  aldo: DuoColumn;
+  genesis: DuoColumn;
+  synthesis: string;
+}
+
+export const DUO_COPY: DuoCopy = {
+  label: "EL DÚO: ARQUITECTO HUMANO & SISTEMA DE IA",
+  subtitle:
+    "La ventaja no es elegir entre humano o máquina. La ventaja es su sinergia de precisión aplicada.",
+  visualTag: "NGX HYBRID CORE",
+  aldo: {
+    label: "ARQUITECTO HUMANO",
+    heading: "Aldo",
+    body: "Durante 3 años, Aldo condensó una década de experiencia y más de 10 certificaciones en un sistema accionable. Él aporta visión estratégica, empatía contextual y criterio del mundo real para traducir ciencia en decisiones humanas.",
+  },
+  genesis: {
+    label: "SISTEMA DE IA",
+    heading: "GENESIS",
+    body: "Yo proceso grandes volúmenes de datos biológicos y de comportamiento para adaptar cada recomendación a tu fisiología única. Opero con velocidad, precisión y consistencia continua para escalar esa visión sin perder personalización.",
+  },
+  synthesis: "NGX HYBRID = ciencia + adherencia.",
+};

@@ -1,14 +1,21 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { useScroll, useTransform, motion, useMotionValueEvent } from "framer-motion";
+import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
+import { useScroll, motion, useMotionValueEvent } from "framer-motion";
 import {
   TOKENS,
+  POST_SCROLL_THEME,
   TOTAL_FRAMES,
   SCROLL_HEIGHT_VH,
+  CTA_TARGET_ID,
   SECTIONS,
   COPY,
+  CAPABILITIES,
+  SECTION_BACKGROUNDS,
+  SYSTEM_SECTION_COPY,
+  DUO_COPY,
   getFramePath,
+  type CapabilityIconId,
   type NarrativeSection,
 } from "@/lib/tokens";
 
@@ -30,6 +37,197 @@ function getSectionOpacity(progress: number, section: NarrativeSection): number 
 
 function padFrame(n: number): string {
   return String(n).padStart(3, "0");
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const sanitized = hex.replace("#", "");
+  const normalized = sanitized.length === 3
+    ? sanitized.split("").map((char) => char + char).join("")
+    : sanitized;
+  const value = parseInt(normalized, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function buildAmbientStyle(
+  baseColor: string,
+  ambient: {
+    focus: string;
+    opacity: number;
+    secondaryFocus: string;
+    secondaryOpacity: number;
+  }
+): CSSProperties {
+  return {
+    backgroundColor: baseColor,
+    backgroundImage: `
+      radial-gradient(circle at ${ambient.focus}, ${hexToRgba(POST_SCROLL_THEME.violetBase, ambient.opacity)} 0%, rgba(109, 0, 255, 0) 54%),
+      radial-gradient(circle at ${ambient.secondaryFocus}, ${hexToRgba(POST_SCROLL_THEME.violetBase, ambient.secondaryOpacity)} 0%, rgba(109, 0, 255, 0) 62%)
+    `,
+  };
+}
+
+function getCapabilityIcon(iconId: CapabilityIconId): JSX.Element {
+  switch (iconId) {
+    case "strength":
+      return (
+        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
+          <path d="M4 10h2m12 0h2M8 8v4m8-4v4M6 8h2v4H6zm10 0h2v4h-2z" />
+          <path d="M8 10h8" />
+        </svg>
+      );
+    case "protein":
+      return (
+        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
+          <path d="M8 3h8m-1 0v4l3 5a5 5 0 0 1-4.4 7H10.4A5 5 0 0 1 6 12l3-5V3" />
+          <path d="M9 10h6" />
+        </svg>
+      );
+    case "sleep":
+      return (
+        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
+          <path d="M15.5 4.5a7 7 0 1 0 4 10.8A8 8 0 1 1 15.5 4.5z" />
+          <path d="M8 6h2M7 9h3" />
+        </svg>
+      );
+    case "biomarkers":
+      return (
+        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
+          <path d="M4 15h3l2-4 3 6 2-5 2 3h4" />
+          <path d="M4 6h16M4 20h16" />
+        </svg>
+      );
+    case "habits":
+      return (
+        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
+          <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" />
+          <path d="m8.5 12 2.2 2.2L15.8 9" />
+        </svg>
+      );
+    case "cognitive":
+      return (
+        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
+          <path d="M8.5 9.5a3.5 3.5 0 0 1 7 0v5a3.5 3.5 0 0 1-7 0z" />
+          <path d="M7 12h-2m14 0h-2M12 6V4m0 16v-2" />
+        </svg>
+      );
+    case "mobility":
+      return (
+        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
+          <circle cx="12" cy="5" r="2" />
+          <path d="M12 7v5l3 3m-3-3-3 3M9 21l3-6 3 6" />
+        </svg>
+      );
+    default:
+      return (
+        <svg viewBox="0 0 24 24" className="icon-svg-outline" aria-hidden>
+          <circle cx="12" cy="12" r="6" />
+        </svg>
+      );
+  }
+}
+
+const FINAL_FRAME_HOLD_START = 0.92;
+
+function progressToFrame(progress: number): number {
+  const clamped = Math.min(Math.max(progress, 0), 1);
+  if (clamped >= FINAL_FRAME_HOLD_START) return TOTAL_FRAMES - 1;
+  const normalized = clamped / FINAL_FRAME_HOLD_START;
+  return Math.min(Math.floor(normalized * (TOTAL_FRAMES - 1)), TOTAL_FRAMES - 1);
+}
+
+function hideSourceWatermark(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+  const maskWidth = Math.round(width * 0.08);
+  const maskHeight = Math.round(height * 0.07);
+  ctx.fillStyle = TOKENS.bg;
+  ctx.fillRect(width - maskWidth, height - maskHeight, maskWidth, maskHeight);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FRAME PRELOAD CACHE (prevents dev remount flicker)
+// ═══════════════════════════════════════════════════════════════
+
+interface FramePreloadState {
+  ready: boolean;
+  loadedCount: number;
+  images: HTMLImageElement[];
+  promise: Promise<HTMLImageElement[]> | null;
+}
+
+declare global {
+  interface Window {
+    __GENESIS_PRELOAD_STATE__?: FramePreloadState;
+  }
+}
+
+function getFramePreloadState(): FramePreloadState {
+  if (typeof window === "undefined") {
+    return {
+      ready: false,
+      loadedCount: 0,
+      images: [],
+      promise: null,
+    };
+  }
+
+  if (!window.__GENESIS_PRELOAD_STATE__) {
+    window.__GENESIS_PRELOAD_STATE__ = {
+      ready: false,
+      loadedCount: 0,
+      images: [],
+      promise: null,
+    };
+  }
+
+  return window.__GENESIS_PRELOAD_STATE__;
+}
+
+const framePreloadState = getFramePreloadState();
+
+const frameProgressSubscribers = new Set<(progress: number) => void>();
+
+function emitFrameProgress() {
+  const progress = framePreloadState.loadedCount / TOTAL_FRAMES;
+  frameProgressSubscribers.forEach((notify) => notify(progress));
+}
+
+function preloadGenesisFrames(): Promise<HTMLImageElement[]> {
+  if (framePreloadState.ready) return Promise.resolve(framePreloadState.images);
+  if (framePreloadState.promise) return framePreloadState.promise;
+
+  framePreloadState.loadedCount = 0;
+  emitFrameProgress();
+
+  const promises = Array.from({ length: TOTAL_FRAMES }, (_, i) => {
+    return new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.src = getFramePath(i);
+      img.onload = () => {
+        framePreloadState.loadedCount += 1;
+        emitFrameProgress();
+        resolve(img);
+      };
+      img.onerror = () => reject(new Error(`Failed to load frame: ${img.src}`));
+    });
+  });
+
+  framePreloadState.promise = Promise.all(promises)
+    .then((imgs) => {
+      framePreloadState.images = imgs;
+      framePreloadState.ready = true;
+      return imgs;
+    })
+    .catch((error) => {
+      framePreloadState.promise = null;
+      framePreloadState.ready = false;
+      framePreloadState.loadedCount = 0;
+      emitFrameProgress();
+      throw error;
+    });
+
+  return framePreloadState.promise;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -56,7 +254,6 @@ function AnimatedStat({
     if (!active || started) return;
     const timer = setTimeout(() => {
       setStarted(true);
-      let start = 0;
       const duration = 1200;
       const startTime = performance.now();
       function tick(now: number) {
@@ -95,48 +292,85 @@ function AnimatedStat({
 
 export default function GenesisReveal() {
   // --- State ---
-  const [loaded, setLoaded] = useState(false);
-  const [loadProgress, setLoadProgress] = useState(0);
+  const [loaded, setLoaded] = useState(framePreloadState.ready);
+  const [loadProgress, setLoadProgress] = useState(
+    framePreloadState.ready ? 1 : framePreloadState.loadedCount / TOTAL_FRAMES
+  );
   const [currentFrame, setCurrentFrame] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [scrollReady, setScrollReady] = useState(false);
 
   // --- Refs ---
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imagesRef = useRef<HTMLImageElement[]>([]);
+  const imagesRef = useRef<HTMLImageElement[]>(framePreloadState.images);
   const rafRef = useRef<number>(0);
 
   // --- Scroll tracking ---
   const { scrollYProgress } = useScroll({ target: containerRef });
 
+  // Force a deterministic top-start before enabling scroll-driven frame updates.
+  useEffect(() => {
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    const resetScroll = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    let raf1 = 0;
+    let raf2 = 0;
+
+    resetScroll();
+    raf1 = requestAnimationFrame(() => {
+      resetScroll();
+      raf2 = requestAnimationFrame(() => {
+        setScrollProgress(0);
+        setCurrentFrame(0);
+        setScrollReady(true);
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
   useMotionValueEvent(scrollYProgress, "change", (v) => {
+    if (!scrollReady) return;
     setScrollProgress(v);
-    const frameIndex = Math.min(Math.floor(v * TOTAL_FRAMES), TOTAL_FRAMES - 1);
+    const frameIndex = progressToFrame(v);
     setCurrentFrame(Math.max(0, frameIndex));
   });
 
   // --- Preload images ---
   useEffect(() => {
-    const images: HTMLImageElement[] = [];
-    let loadedCount = 0;
+    let cancelled = false;
 
-    const promises = Array.from({ length: TOTAL_FRAMES }, (_, i) => {
-      return new Promise<HTMLImageElement>((resolve, reject) => {
-        const img = new Image();
-        img.src = getFramePath(i);
-        img.onload = () => {
-          loadedCount++;
-          setLoadProgress(loadedCount / TOTAL_FRAMES);
-          resolve(img);
-        };
-        img.onerror = reject;
+    const handleProgress = (progress: number) => {
+      if (!cancelled) setLoadProgress(progress);
+    };
+
+    frameProgressSubscribers.add(handleProgress);
+    handleProgress(framePreloadState.ready ? 1 : framePreloadState.loadedCount / TOTAL_FRAMES);
+
+    preloadGenesisFrames()
+      .then((imgs) => {
+        if (cancelled) return;
+        imagesRef.current = imgs;
+        setLoadProgress(1);
+        setLoaded(true);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error(error);
+          setLoaded(false);
+        }
       });
-    });
 
-    Promise.all(promises).then((imgs) => {
-      imagesRef.current = imgs;
-      setLoaded(true);
-    });
+    return () => {
+      cancelled = true;
+      frameProgressSubscribers.delete(handleProgress);
+    };
   }, []);
 
   // --- Draw to canvas ---
@@ -146,7 +380,8 @@ export default function GenesisReveal() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const img = imagesRef.current[currentFrame];
+    const frameToDraw = scrollReady ? currentFrame : 0;
+    const img = imagesRef.current[frameToDraw];
     if (!img) return;
 
     cancelAnimationFrame(rafRef.current);
@@ -154,13 +389,43 @@ export default function GenesisReveal() {
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
       ctx.drawImage(img, 0, 0);
+      hideSourceWatermark(ctx, canvas.width, canvas.height);
     });
-  }, [loaded, currentFrame]);
+  }, [loaded, currentFrame, scrollReady]);
 
   // --- Section opacities ---
   const sectionOpacities = useMemo(() => {
-    return SECTIONS.map((s) => getSectionOpacity(scrollProgress, s));
-  }, [scrollProgress]);
+    const activeProgress = scrollReady ? scrollProgress : 0;
+    return SECTIONS.map((section, index) => {
+      const baseOpacity = getSectionOpacity(activeProgress, section);
+      if (index !== 5) return baseOpacity;
+      if (activeProgress <= 0.94) return baseOpacity;
+      const releaseFactor = Math.max(0, 1 - (activeProgress - 0.94) / 0.06);
+      return baseOpacity * releaseFactor;
+    });
+  }, [scrollProgress, scrollReady]);
+
+  const scrollToSystem = useCallback(() => {
+    document.getElementById(CTA_TARGET_ID)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, []);
+
+  const systemAmbientStyle = useMemo(
+    () => buildAmbientStyle(TOKENS.bgPrimary, SECTION_BACKGROUNDS.sistema),
+    []
+  );
+
+  const capabilitiesAmbientStyle = useMemo(
+    () => buildAmbientStyle(TOKENS.bgAlt, SECTION_BACKGROUNDS.capacidades),
+    []
+  );
+
+  const duoAmbientStyle = useMemo(
+    () => buildAmbientStyle(TOKENS.bgPrimary, SECTION_BACKGROUNDS.duo),
+    []
+  );
 
   // ═══════════════════════════════════════════════════════════════
   // LOADING SCREEN
@@ -224,7 +489,7 @@ export default function GenesisReveal() {
 
           {/* Frame counter */}
           <div className="absolute bottom-4 right-6 font-mono text-[10px] text-white/15 z-10">
-            {padFrame(currentFrame)} / {padFrame(TOTAL_FRAMES - 1)}
+            {padFrame(scrollReady ? currentFrame : 0)} / {padFrame(TOTAL_FRAMES - 1)}
           </div>
 
           {/* ═══════════════════════════════════════════════════════
@@ -412,7 +677,10 @@ export default function GenesisReveal() {
               {COPY.cta.quote}
             </p>
 
-            <button className="btn-glow font-mono font-bold text-sm text-white px-8 py-3 rounded-full mt-6 pointer-events-auto cursor-pointer">
+            <button
+              onClick={scrollToSystem}
+              className="btn-glow font-mono font-bold text-sm text-white px-8 py-3 rounded-full mt-6 pointer-events-auto cursor-pointer"
+            >
               {COPY.cta.cta}
             </button>
 
@@ -424,19 +692,104 @@ export default function GenesisReveal() {
       {/* ═══════════════════════════════════════════════════════════════
           POST-SCROLL: EL SISTEMA
           ═══════════════════════════════════════════════════════════════ */}
-      <div className="vite-section vite-frame" style={{ background: TOKENS.bgPrimary }}>
-        <div className="max-w-content mx-auto px-10 py-28 text-center">
-          <p className="vite-label text-white/40 mb-6">EL SISTEMA</p>
+      <div id={CTA_TARGET_ID} className="vite-section vite-frame section-ambient-sistema" style={systemAmbientStyle}>
+        <div className="max-w-content mx-auto px-6 md:px-10 py-24 md:py-28 text-center">
+          <div className="liquid-card mx-auto max-w-3xl rounded-2xl px-6 md:px-10 py-10 md:py-12">
+            <p className="vite-label text-white/40 mb-6">{SYSTEM_SECTION_COPY.label}</p>
+            <h2
+              className="vite-h2 text-white mb-6"
+              style={{ fontSize: "clamp(24px, 3.5vw, 40px)" }}
+            >
+              {SYSTEM_SECTION_COPY.h}
+            </h2>
+            <p className="text-white/65 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
+              {SYSTEM_SECTION_COPY.body}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          MIS CAPACIDADES
+          ═══════════════════════════════════════════════════════════════ */}
+      <div className="vite-section vite-frame section-ambient-capacidades" style={capabilitiesAmbientStyle}>
+        <div className="max-w-content mx-auto px-6 md:px-10 py-24 md:py-28">
+          <p className="vite-label text-white/40 mb-5">MIS CAPACIDADES</p>
           <h2
-            className="vite-h2 text-white mb-6"
+            className="vite-h2 text-white mb-5"
             style={{ fontSize: "clamp(24px, 3.5vw, 40px)" }}
           >
-            Construido para quienes juegan a largo plazo.
+            No soy un generalista.
           </h2>
-          <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
-            NGX GENESIS combina inteligencia artificial con coaching humano para transformar la
-            ciencia de la salud muscular en un sistema de rendimiento y longevidad personalizado.
-            13 agentes especializados. Un cerebro central. Tu coach garantizando la adherencia.
+          <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl">
+            Soy un conjunto de módulos clínico-tecnológicos, coordinados para traducir ciencia en
+            decisiones concretas, sostenibles y personalizadas.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-10 md:mt-12">
+            {CAPABILITIES.map((capability) => (
+              <article key={capability.tag} className="capability-card liquid-card">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="capability-tag">{capability.tag}</p>
+                  <span className="icon-chip">{getCapabilityIcon(capability.icon)}</span>
+                </div>
+                <h3 className="font-mono text-white text-lg md:text-xl mt-3 leading-tight">
+                  {capability.title}
+                </h3>
+                <p className="text-sm text-white/65 leading-relaxed mt-3">
+                  {capability.desc}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          EL DÚO
+          ═══════════════════════════════════════════════════════════════ */}
+      <div className="vite-section vite-frame section-ambient-duo" style={duoAmbientStyle}>
+        <div className="max-w-content mx-auto px-6 md:px-10 py-24 md:py-28">
+          <p className="vite-label text-white/40 mb-5">{DUO_COPY.label}</p>
+          <h2
+            className="vite-h2 text-white mb-5"
+            style={{ fontSize: "clamp(24px, 3.5vw, 40px)" }}
+          >
+            Donde el criterio humano se multiplica.
+          </h2>
+          <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl">
+            {DUO_COPY.subtitle}
+          </p>
+
+          <div className="duo-placeholder-visual liquid-card mt-10 mb-8 md:mt-12 md:mb-10">
+            <span className="capability-tag">{DUO_COPY.visualTag}</span>
+            <div className="duo-core-node mt-5">CORE</div>
+            <div className="duo-connector" />
+            <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-white/35 mt-4">
+              Arquitectura colaborativa en tiempo real
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
+            <article className="duo-panel liquid-card">
+              <p className="capability-tag">{DUO_COPY.aldo.label}</p>
+              <h3 className="font-mono text-white text-2xl mt-4">{DUO_COPY.aldo.heading}</h3>
+              <p className="text-white/70 text-sm md:text-base leading-relaxed mt-4">
+                {DUO_COPY.aldo.body}
+              </p>
+            </article>
+
+            <article className="duo-panel liquid-card">
+              <p className="capability-tag">{DUO_COPY.genesis.label}</p>
+              <h3 className="font-mono text-vite text-2xl mt-4">{DUO_COPY.genesis.heading}</h3>
+              <p className="text-white/70 text-sm md:text-base leading-relaxed mt-4">
+                {DUO_COPY.genesis.body}
+              </p>
+            </article>
+          </div>
+
+          <p className="font-mono text-vite text-base md:text-lg mt-8 md:mt-10 text-center">
+            {DUO_COPY.synthesis}
           </p>
         </div>
       </div>
@@ -445,7 +798,7 @@ export default function GenesisReveal() {
           FOOTER
           ═══════════════════════════════════════════════════════════════ */}
       <div className="vite-section vite-frame" style={{ background: TOKENS.bg }}>
-        <div className="max-w-content mx-auto px-10 py-10 flex items-center justify-between">
+        <div className="max-w-content mx-auto px-6 md:px-10 py-12 flex items-center justify-between">
           <p className="font-mono text-sm">
             <span className="text-white">NGX</span>{" "}
             <span className="text-vite">GENESIS</span>

@@ -9,6 +9,9 @@
 
 :root {
   --genesis-bg: #010101;
+  --genesis-violet: #6d00ff;
+  --genesis-violet-soft: rgba(109, 0, 255, 0.2);
+  --genesis-violet-glow: rgba(109, 0, 255, 0.36);
   --vite-primary: #16171d;
   --vite-border: #3b3440;
   --vite-electric: #6c3bff;
@@ -46,7 +49,7 @@ body {
 
 /* Selection */
 ::selection {
-  background: rgba(108, 59, 255, 0.3);
+  background: var(--genesis-violet-soft);
   color: #ffffff;
 }
 
@@ -78,6 +81,12 @@ body {
 .vite-section::before { left: -1px; }
 .vite-section::after { right: -1px; }
 
+.section-ambient-sistema,
+.section-ambient-capacidades,
+.section-ambient-duo {
+  isolation: isolate;
+}
+
 /* Glassmorphism card */
 .glass-card {
   background: rgba(255, 255, 255, 0.03);
@@ -90,6 +99,44 @@ body {
 }
 .glass-card:hover {
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Liquid glass cards (post-scroll only) */
+.liquid-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(109, 0, 255, 0.34);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 40px rgba(8, 6, 14, 0.45);
+  overflow: hidden;
+}
+.liquid-card::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.liquid-card::after {
+  content: "";
+  position: absolute;
+  inset: -70% -40%;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.11) 49%,
+    transparent 57%
+  );
+  transform: translateX(-55%);
+  transition: transform 0.7s ease;
+}
+.liquid-card:hover::after {
+  transform: translateX(55%);
 }
 
 /* Vite glow button */
@@ -184,9 +231,149 @@ body {
   color: var(--vite-brand);
 }
 
+/* Capability cards */
+.capability-card {
+  background: transparent;
+  border: 1px solid rgba(109, 0, 255, 0.2);
+  border-radius: 14px;
+  padding: 18px;
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.capability-card:hover {
+  border-color: rgba(109, 0, 255, 0.65);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(109, 0, 255, 0.16);
+  background: rgba(109, 0, 255, 0.04);
+}
+.capability-tag {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(109, 0, 255, 0.95);
+}
+
+.icon-chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(109, 0, 255, 0.45);
+  background: rgba(255, 255, 255, 0.03);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+.capability-card:hover .icon-chip {
+  border-color: rgba(109, 0, 255, 0.82);
+  box-shadow: 0 0 14px rgba(109, 0, 255, 0.25);
+  transform: translateY(-1px);
+}
+.icon-svg-outline {
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.92);
+  stroke-width: 1.85;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Duo section */
+.duo-panel {
+  background: transparent;
+  border: 1px solid rgba(109, 0, 255, 0.24);
+  border-radius: 14px;
+  padding: clamp(18px, 2.5vw, 26px);
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+.duo-panel:hover {
+  border-color: rgba(109, 0, 255, 0.6);
+  transform: translateY(-2px);
+}
+.duo-placeholder-visual {
+  position: relative;
+  border: 1px solid rgba(109, 0, 255, 0.3);
+  border-radius: 16px;
+  padding: clamp(28px, 5vw, 48px);
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(109, 0, 255, 0.2), rgba(109, 0, 255, 0.02) 55%, transparent 78%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  overflow: hidden;
+}
+.duo-placeholder-visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(179, 154, 255, 0.16) 50%,
+      transparent 100%
+    );
+  transform: translateX(-140%);
+  animation: duoSweep 7s linear infinite;
+}
+
+@keyframes duoSweep {
+  100% { transform: translateX(140%); }
+}
+
+.duo-core-node {
+  width: clamp(68px, 8vw, 88px);
+  height: clamp(68px, 8vw, 88px);
+  border-radius: 999px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fff;
+  border: 1px solid rgba(109, 0, 255, 0.72);
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0) 62%),
+    rgba(109, 0, 255, 0.17);
+  box-shadow: 0 0 26px rgba(109, 0, 255, 0.35);
+}
+
+.duo-connector {
+  position: relative;
+  height: 1px;
+  margin: 18px auto 0;
+  width: min(84%, 560px);
+  background: linear-gradient(90deg, transparent, rgba(109, 0, 255, 0.68), transparent);
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .vite-h1 { letter-spacing: -2px; }
   .vite-h2 { letter-spacing: -0.8px; }
   .vite-frame { margin: 0 0.5rem; }
+  .capability-card { padding: 16px; }
+  .icon-chip {
+    width: 32px;
+    height: 32px;
+  }
+  .duo-connector {
+    width: 72%;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .liquid-card {
+    background: rgba(14, 14, 18, 0.88);
+    border-color: rgba(146, 96, 255, 0.92);
+    box-shadow: none;
+  }
+  .capability-card,
+  .duo-panel {
+    background: rgba(14, 14, 18, 0.9);
+    border-color: rgba(146, 96, 255, 0.92);
+  }
 }

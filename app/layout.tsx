@@ -20,6 +20,19 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                history.scrollRestoration = "manual";
+                window.scrollTo(0, 0);
+                window.addEventListener("beforeunload", function () {
+                  window.scrollTo(0, 0);
+                });
+              } catch (e) {}
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
