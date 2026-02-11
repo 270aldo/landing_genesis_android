@@ -1,0 +1,536 @@
+"use client";
+
+import { useRef, useState, useEffect, useMemo, type CSSProperties } from "react";
+import { useScroll, motion, useMotionValueEvent, AnimatePresence } from "framer-motion";
+import { Activity, X, ArrowRight, Check } from "lucide-react";
+// Assumes you have created these files from the skill templates
+import { TOKENS, POST_SCROLL_THEME, TOTAL_FRAMES, SCROLL_HEIGHT_VH } from "@/lib/tokens";
+
+import GenesisAudio from "./GenesisAudio";
+
+// ═══════════════════════════════════════════════════════════════
+// CONFIGURATION (Replace with your specific content)
+// ═══════════════════════════════════════════════════════════════
+
+export interface NarrativeSection {
+  id: string;
+  scrollStart: number;
+  scrollEnd: number;
+}
+
+export const SECTIONS: NarrativeSection[] = [
+  { id: "intro", scrollStart: 0.0, scrollEnd: 0.15 },
+  { id: "feature1", scrollStart: 0.20, scrollEnd: 0.35 },
+  { id: "feature2", scrollStart: 0.40, scrollEnd: 0.55 },
+  { id: "cta", scrollStart: 0.85, scrollEnd: 1.0 },
+];
+
+function getFramePath(index: number): string {
+  // Ensure you have images in public/sequence/frame_000.webp
+  return `/sequence/frame_${String(index).padStart(3, "0")}.webp`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function getSectionOpacity(progress: number, section: NarrativeSection): number {
+  const { scrollStart, scrollEnd } = section;
+  const range = scrollEnd - scrollStart;
+  const fadeInEnd = scrollStart + range * 0.25;
+  const fadeOutStart = scrollStart + range * 0.80;
+
+  if (progress < scrollStart || progress > scrollEnd) return 0;
+  
+  // If we are at the very beginning and it's the first section, stay fully visible
+  if (scrollStart === 0 && progress <= fadeInEnd) return 1;
+
+  if (progress < fadeInEnd) return (progress - scrollStart) / (fadeInEnd - scrollStart);
+  
+  // Keep the final section visible at the end
+  if (scrollEnd >= 0.99 && progress >= fadeOutStart) return 1;
+
+  if (progress > fadeOutStart) return 1 - (progress - fadeOutStart) / (scrollEnd - fadeOutStart);
+  return 1;
+}
+
+function padFrame(n: number): string {
+  return String(n).padStart(3, "0");
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const sanitized = hex.replace("#", "");
+  const normalized = sanitized.length === 3
+    ? sanitized.split("").map((char) => char + char).join("")
+    : sanitized;
+  const value = parseInt(normalized, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// FRAME PRELOAD CACHE (prevents dev remount flicker)
+// ═══════════════════════════════════════════════════════════════
+
+interface FramePreloadState {
+  ready: boolean;
+  loadedCount: number;
+  images: HTMLImageElement[];
+  promise: Promise<HTMLImageElement[]> | null;
+}
+
+declare global {
+  interface Window {
+    __GENESIS_PRELOAD_STATE__?: FramePreloadState;
+  }
+}
+
+function getFramePreloadState(): FramePreloadState {
+  if (typeof window === "undefined") {
+    return {
+      ready: false,
+      loadedCount: 0,
+      images: [],
+      promise: null,
+    };
+  }
+
+  if (!window.__GENESIS_PRELOAD_STATE__) {
+    window.__GENESIS_PRELOAD_STATE__ = {
+      ready: false,
+      loadedCount: 0,
+      images: [],
+      promise: null,
+    };
+  }
+
+  return window.__GENESIS_PRELOAD_STATE__;
+}
+
+const framePreloadState = getFramePreloadState();
+
+const frameProgressSubscribers = new Set<(progress: number) => void>();
+
+function emitFrameProgress() {
+  const progress = framePreloadState.loadedCount / TOTAL_FRAMES;
+  frameProgressSubscribers.forEach((notify) => notify(progress));
+}
+
+function preloadGenesisFrames(): Promise<HTMLImageElement[]> {
+  if (framePreloadState.ready) return Promise.resolve(framePreloadState.images);
+  if (framePreloadState.promise) return framePreloadState.promise;
+
+  framePreloadState.loadedCount = 0;
+  emitFrameProgress();
+
+  const promises = Array.from({ length: TOTAL_FRAMES }, (_, i) => {
+    return new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.src = getFramePath(i);
+      img.onload = () => {
+        framePreloadState.loadedCount += 1;
+        emitFrameProgress();
+        resolve(img);
+      };
+      // RESILIENT LOADING: If a frame fails, we resolve nicely but the image will be broken.
+      // We'll handle filling gaps in the post-processing step if needed, or simply let the canvas draw nothing/previous frame.
+      // For now, we resolve so the Promise.all doesn't fail.
+      img.onerror = () => {
+        console.warn(`Failed to load frame: ${img.src}`);
+        framePreloadState.loadedCount += 1;
+        emitFrameProgress();
+        resolve(img); // Resolve with the broken image object
+      };
+    });
+  });
+
+  framePreloadState.promise = Promise.all(promises)
+    .then((imgs) => {
+      // POST-PROCESS: Fill gaps (broken images) with the nearest previous valid image
+      for (let i = 0; i < imgs.length; i++) {
+        // detection of broken image: naturalWidth is 0
+        if (imgs[i].naturalWidth === 0) {
+          // Find closest previous valid
+          let replacement = imgs[i];
+          for (let j = i - 1; j >= 0; j--) {
+            if (imgs[j].naturalWidth > 0) {
+              replacement = imgs[j];
+              break;
+            }
+          }
+          // If no previous valid (e.g. frame 0 fails), look ahead? 
+          // Or just leave it broken if frame 0 fails (critial error).
+          // But assuming frame 0 exists based on user feedback.
+          if (replacement.naturalWidth > 0) {
+            imgs[i] = replacement;
+          }
+        }
+      }
+      framePreloadState.images = imgs;
+      framePreloadState.ready = true;
+      return imgs;
+    })
+    .catch((error) => {
+      // Should not happen with the resilient logic, but as a safety net:
+      framePreloadState.promise = null;
+      framePreloadState.ready = false;
+      framePreloadState.loadedCount = 0;
+      emitFrameProgress();
+      throw error;
+    });
+
+  return framePreloadState.promise;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATED COUNTER
+// ═══════════════════════════════════════════════════════════════
+
+function AnimatedStat({
+  value,
+  unit,
+  label,
+  active,
+  delay,
+}: {
+  value: number;
+  unit: string;
+  label: string;
+  active: boolean;
+  delay: number;
+}) {
+  const [count, setCount] = useState(0);
+  const [hasRun, setHasRun] = useState(false);
+
+  useEffect(() => {
+    if ((!active && !hasRun) || hasRun) return;
+
+    // Once active, we mark as running and don't stop even if active becomes false (scrolling past)
+    setHasRun(true);
+
+    const timer = setTimeout(() => {
+      const duration = 1200;
+      const startTime = performance.now();
+      function tick(now: number) {
+        const elapsed = now - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        setCount(Math.round(eased * value));
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [active, hasRun, value, delay]);
+
+  // Removed the reset logic so stats stick once viewed
+
+  return (
+    <div>
+      <div className="stat-number" style={{ fontSize: "clamp(36px, 5vw, 48px)" }}>
+        {count}
+        {unit}
+      </div>
+      <div className="text-[13px] text-white/60 mt-1">{label}</div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════
+
+export default function GenesisReveal() {
+  // --- State ---
+  const [loaded, setLoaded] = useState(framePreloadState.ready);
+  const [loadProgress, setLoadProgress] = useState(
+    framePreloadState.ready ? 1 : framePreloadState.loadedCount / TOTAL_FRAMES
+  );
+  const [currentFrame, setCurrentFrame] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [scrollReady, setScrollReady] = useState(false);
+
+
+  // Placeholder Config - USER TO REPLACE
+  const CAL_LINK = "https://cal.com/aldoolivas";
+  const AGENT_ID = "replace-with-your-elevenlabs-agent-id";
+
+  // --- Refs ---
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imagesRef = useRef<HTMLImageElement[]>(framePreloadState.images);
+  const rafRef = useRef<number>(0);
+
+  // --- Scroll tracking ---
+  const { scrollYProgress } = useScroll({ target: containerRef });
+
+  // Force a deterministic top-start before enabling scroll-driven frame updates.
+  useEffect(() => {
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    const resetScroll = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    let raf1 = 0;
+    let raf2 = 0;
+
+    resetScroll();
+    raf1 = requestAnimationFrame(() => {
+      resetScroll();
+      raf2 = requestAnimationFrame(() => {
+        setScrollProgress(0);
+        setCurrentFrame(0);
+        setScrollReady(true);
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    if (!scrollReady) return;
+    setScrollProgress(v);
+    const frameIndex = progressToFrame(v);
+    setCurrentFrame(Math.max(0, frameIndex));
+  });
+
+  // --- Preload images ---
+  useEffect(() => {
+    let cancelled = false;
+
+    const handleProgress = (progress: number) => {
+      if (!cancelled) setLoadProgress(progress);
+    };
+
+    frameProgressSubscribers.add(handleProgress);
+    handleProgress(framePreloadState.ready ? 1 : framePreloadState.loadedCount / TOTAL_FRAMES);
+
+    preloadGenesisFrames()
+      .then((imgs) => {
+        if (cancelled) return;
+        imagesRef.current = imgs;
+        setLoadProgress(1);
+        setLoaded(true);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error(error);
+          setLoaded(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      frameProgressSubscribers.delete(handleProgress);
+    };
+  }, []);
+
+  // --- Draw to canvas ---
+  useEffect(() => {
+    if (!loaded) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const frameToDraw = scrollReady ? currentFrame : 0;
+    const img = imagesRef.current[frameToDraw];
+    if (!img) return;
+
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0);
+      hideSourceWatermark(ctx, canvas.width, canvas.height);
+    });
+  }, [loaded, currentFrame, scrollReady]);
+
+  // --- Section opacities ---
+  const sectionOpacities = useMemo(() => {
+    const activeProgress = scrollReady ? scrollProgress : 0;
+    return SECTIONS.map((section) => getSectionOpacity(activeProgress, section));
+  }, [scrollProgress, scrollReady]);
+
+  const scrollToNext = useCallback(() => {
+    const nextSection = document.getElementById("next-section");
+    nextSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  // ═══════════════════════════════════════════════════════════════
+  // LOADING SCREEN
+  // ═══════════════════════════════════════════════════════════════
+  if (!loaded) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+        style={{ background: TOKENS.bg }}
+      >
+        <div className="w-3 h-3 rounded-full bg-vite animate-pulse-dot mb-8" />
+        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-white/40 mb-6">
+          CARGANDO PROTOCOLO...
+        </p>
+        <div className="w-48 h-[2px] bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-vite transition-all duration-200 ease-out rounded-full"
+            style={{ width: `${loadProgress * 100}%` }}
+          />
+        </div>
+        <p className="font-mono text-[10px] text-white/20 mt-3">
+          {Math.round(loadProgress * 100)}%
+        </p>
+      </div>
+    );
+  }
+
+
+  // ═══════════════════════════════════════════════════════════════
+  // MAIN RENDER
+  // ═══════════════════════════════════════════════════════════════
+  return (
+    <div className="min-h-screen text-white" style={{ background: TOKENS.bg }}>
+      <GenesisAudio active={loaded} />
+      {/* ── SCROLL CONTAINER ── */}
+      <div ref={containerRef} style={{ height: `${SCROLL_HEIGHT_VH}vh` }} className="relative">
+        {/* ── STICKY VIEWPORT ── */}
+        <div className="sticky top-0 h-screen w-full overflow-hidden">
+          {/* Canvas */}
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full"
+            style={{ objectFit: "contain" }}
+          />
+
+          {/* Blueprint frame borders */}
+          <div className="absolute inset-0 pointer-events-none mx-4">
+            <div className="absolute top-0 bottom-0 left-0 w-px bg-nickel/30" />
+            <div className="absolute top-0 bottom-0 right-0 w-px bg-nickel/30" />
+            {/* Tick marks — top corners */}
+            <div className="absolute top-0 left-0 w-px h-[11px] bg-nickel" />
+            <div className="absolute top-0 right-0 w-px h-[11px] bg-nickel" />
+            {/* Tick marks — bottom corners */}
+            <div className="absolute bottom-0 left-0 w-px h-[11px] bg-nickel" />
+            <div className="absolute bottom-0 right-0 w-px h-[11px] bg-nickel" />
+          </div>
+
+          {/* Scan line */}
+          <div className="scan-line" />
+
+          {/* Noise overlay */}
+          <div className="noise-overlay" />
+
+          {/* Frame counter */}
+          <div className="absolute bottom-4 right-6 font-mono text-[10px] text-white/15 z-10">
+            {padFrame(scrollReady ? currentFrame : 0)} / {padFrame(TOTAL_FRAMES - 1)}
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════
+              NARRATIVE SECTIONS
+              ═══════════════════════════════════════════════════════ */}
+
+          {/* SECTION 0: INTRO */}
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-4"
+            style={{ opacity: sectionOpacities[0], transition: "opacity 0.1s ease-out" }}
+          >
+            <div className="text-center max-w-2xl">
+              <h1 className="vite-h1 text-white mb-6" style={{ fontSize: "clamp(40px, 6vw, 72px)" }}>
+                Title Here
+              </h1>
+              <p className="text-white/60 text-lg md:text-xl">
+                Cinematic scrollytelling template.
+              </p>
+            </div>
+          </div>
+
+          {/* SECTION 1: FEATURE (Left) */}
+          <div
+            className="absolute inset-0 flex items-center pointer-events-none z-10 px-4"
+            style={{ opacity: sectionOpacities[1], transition: "opacity 0.1s ease-out" }}
+          >
+            <div className="glass-card ml-[5%] max-w-[90%] md:max-w-[40%] p-8">
+              <h2 className="vite-h2 text-white mb-4">Feature Section</h2>
+              <p className="text-white/80">
+                Use the .glass-card class for panels that sit on top of the moving video background.
+              </p>
+            </div>
+          </div>
+
+          {/* SECTION 2: STATS (Right) */}
+          <div
+            className="absolute inset-0 flex items-center justify-end pointer-events-none z-10 px-4"
+            style={{ opacity: sectionOpacities[2], transition: "opacity 0.1s ease-out" }}
+          >
+             <div className="mr-[5%] max-w-[90%] md:max-w-[40%] text-right">
+              <h2 className="vite-h2 text-white mb-6">Data Driven</h2>
+              <div className="space-y-4">
+                <div className="stat-item">
+                  <div className="text-4xl font-mono font-bold text-white">100%</div>
+                  <div className="text-vite text-sm">PERFORMANCE</div>
+                </div>
+                {/* Add more stats here */}
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 3: CTA (Bottom) */}
+          <div
+            className="absolute inset-0 flex items-end justify-center pb-[15vh] pointer-events-none z-10 px-4"
+            style={{ opacity: sectionOpacities[3], transition: "opacity 0.1s ease-out" }}
+          >
+            <div className="text-center">
+              <h2 className="vite-h2 text-white mb-6">Ready to Start?</h2>
+              <button className="btn-glow px-8 py-4 rounded-full text-white font-bold pointer-events-auto cursor-pointer">
+                ACTION BUTTON
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      {/* ═══════════════════════════════════════════════════════════════
+          POST-SCROLL CONTENT PLACEHOLDER
+          ═══════════════════════════════════════════════════════════════ */}
+      <div id="next-section" className="vite-section vite-frame" style={{ minHeight: '50vh' }}>
+        <div className="text-center max-w-4xl mx-auto">
+          <h2 className="vite-h2 text-white mb-8">Additional Content</h2>
+          <p className="text-white/60">
+            This is where the normal scrolling content resumes after the sequence ends.
+          </p>
+        </div>
+      </div>
+
+
+      {/* ═══════════════════════════════════════════════════════════════
+          EL DÚO
+          ═══════════════════════════════════════════════════════════════ */}
+
+
+      {/* ═══════════════════════════════════════════════════════════════
+          CTA / CONTACT SECTION
+          ═══════════════════════════════════════════════════════════════ */}
+
+
+      {/* ═══════════════════════════════════════════════════════════════
+          FOOTER
+          ═══════════════════════════════════════════════════════════════ */}
+      <div className="vite-section vite-frame" style={{ background: TOKENS.bg }}>
+        <div className="max-w-content mx-auto px-6 md:px-10 py-12 flex items-center justify-between">
+          <p className="font-mono text-sm">
+            <span className="text-white">NGX</span>{" "}
+            <span className="text-vite">GENESIS</span>
+          </p>
+          <p className="font-mono text-xs text-grey">
+            &copy; 2026 NGX Inc. Performance &amp; Longevity.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

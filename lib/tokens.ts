@@ -373,3 +373,21 @@ export const CONTACT_SECTION = {
   },
 };
 
+export const PERFORMANCE_GRID = {
+  engine: {
+    label: "THE_ENGINE",
+    stat: "VO2_MAX_OPTIMIZED",
+    desc: "Metabolic conditioning without joint impact.",
+  },
+  mind: {
+    label: "THE_MIND",
+    stat: "NEURO_PRIMED",
+    desc: "Focus state activation.",
+  },
+  fuel: {
+    label: "THE_FUEL",
+    stat: "METABOLIC_EFFICIENCY",
+    desc: "Nutrition as a precision tool.",
+  },
+};
+

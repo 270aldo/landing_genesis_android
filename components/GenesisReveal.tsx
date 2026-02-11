@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
 import { useScroll, motion, useMotionValueEvent, AnimatePresence } from "framer-motion";
 import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare } from "lucide-react";
+import PerformanceGrid from "./PerformanceGrid";
 import {
   TOKENS,
   POST_SCROLL_THEME,
@@ -35,7 +36,10 @@ function getSectionOpacity(progress: number, section: NarrativeSection): number 
 
   if (progress < scrollStart || progress > scrollEnd) return 0;
   if (progress < fadeInEnd) return (progress - scrollStart) / (fadeInEnd - scrollStart);
+
+  // Keep the final section visible at the end
   if (scrollEnd >= 0.99 && progress >= fadeOutStart) return 1;
+
   if (progress > fadeOutStart) return 1 - (progress - fadeOutStart) / (scrollEnd - fadeOutStart);
   return 1;
 }
@@ -459,20 +463,19 @@ export default function GenesisReveal() {
           {/* Canvas */}
           <canvas
             ref={canvasRef}
-            className="absolute inset-0 w-full h-full"
-            style={{ objectFit: "contain" }}
+            className="absolute inset-0 w-full h-full object-cover md:object-contain"
           />
 
-          {/* Blueprint frame borders */}
-          <div className="absolute inset-0 pointer-events-none mx-4">
+          {/* Blueprint frame borders - Mobile: thinner/subtler? Keep for now. */}
+          <div className="absolute inset-0 pointer-events-none mx-2 md:mx-4">
             <div className="absolute top-0 bottom-0 left-0 w-px bg-nickel/30" />
             <div className="absolute top-0 bottom-0 right-0 w-px bg-nickel/30" />
             {/* Tick marks — top corners */}
-            <div className="absolute top-0 left-0 w-px h-[11px] bg-nickel" />
-            <div className="absolute top-0 right-0 w-px h-[11px] bg-nickel" />
+            <div className="absolute top-0 left-0 w-px h-[8px] md:h-[11px] bg-nickel" />
+            <div className="absolute top-0 right-0 w-px h-[8px] md:h-[11px] bg-nickel" />
             {/* Tick marks — bottom corners */}
-            <div className="absolute bottom-0 left-0 w-px h-[11px] bg-nickel" />
-            <div className="absolute bottom-0 right-0 w-px h-[11px] bg-nickel" />
+            <div className="absolute bottom-0 left-0 w-px h-[8px] md:h-[11px] bg-nickel" />
+            <div className="absolute bottom-0 right-0 w-px h-[8px] md:h-[11px] bg-nickel" />
           </div>
 
           {/* Scan line */}
@@ -492,24 +495,24 @@ export default function GenesisReveal() {
 
           {/* SECTION 0: THE HOOK (center) */}
           <div
-            className="absolute inset-0 flex items-start justify-center pt-[15vh] px-4 pointer-events-none z-10"
+            className="absolute inset-0 flex items-start justify-center pt-[20vh] md:pt-[15vh] px-6 pointer-events-none z-10"
             style={{ opacity: sectionOpacities[0], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="text-center max-w-[90%] md:max-w-2xl">
-              <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-white/40 mb-4">
+            <div className="text-center w-full max-w-2xl">
+              <p className="font-mono text-[10px] md:text-[11px] tracking-[0.3em] uppercase text-white/40 mb-4">
                 {COPY.hook.label}
               </p>
               <h1
                 className="vite-h1 text-white mb-6"
-                style={{ fontSize: "clamp(32px, 5vw, 56px)", whiteSpace: "pre-line" }}
+                style={{ fontSize: "clamp(28px, 5vw, 56px)", whiteSpace: "pre-line" }}
               >
                 {COPY.hook.h}
               </h1>
-              <p className="text-white/50 text-base md:text-lg leading-relaxed whitespace-pre-line mb-6">
+              <p className="text-white/50 text-sm md:text-lg leading-relaxed whitespace-pre-line mb-6 max-w-[90%] mx-auto">
                 {COPY.hook.body}
               </p>
               <motion.p
-                className="font-mono text-vite text-lg md:text-xl font-semibold"
+                className="font-mono text-vite text-base md:text-xl font-semibold"
                 initial={{ opacity: 0, y: 10 }}
                 animate={sectionOpacities[0] > 0.5 ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
                 transition={{ delay: 0.8, duration: 0.6 }}
@@ -521,13 +524,13 @@ export default function GenesisReveal() {
 
           {/* SECTION 1: THE THESIS (left, glass-card) */}
           <div
-            className="absolute inset-0 flex items-center pointer-events-none z-10 px-4"
+            className="absolute inset-0 flex items-end md:items-center justify-center md:justify-start pointer-events-none z-10 px-4 pb-[15vh] md:pb-0"
             style={{ opacity: sectionOpacities[1], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="glass-card ml-[5%] max-w-[90%] md:max-w-[38%]">
+            <div className="glass-card w-full max-w-[95%] md:ml-[5%] md:max-w-[38%]">
               <h2
                 className="vite-h2 text-white mb-4"
-                style={{ fontSize: "clamp(22px, 3vw, 36px)" }}
+                style={{ fontSize: "clamp(20px, 3vw, 36px)" }}
               >
                 {COPY.thesis.h}
               </h2>
@@ -540,17 +543,17 @@ export default function GenesisReveal() {
 
           {/* SECTION 2: THE SCIENCE (right) */}
           <div
-            className="absolute inset-0 flex items-center justify-end pointer-events-none z-10 px-4"
+            className="absolute inset-0 flex items-start md:items-center justify-center md:justify-end pointer-events-none z-10 px-4 pt-[15vh] md:pt-0"
             style={{ opacity: sectionOpacities[2], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="mr-[5%] max-w-[90%] md:max-w-[38%]">
+            <div className="w-full max-w-[95%] md:mr-[5%] md:max-w-[38%]">
               <h2
-                className="vite-h2 text-white mb-6"
-                style={{ fontSize: "clamp(22px, 3vw, 36px)" }}
+                className="vite-h2 text-white mb-6 text-center md:text-left"
+                style={{ fontSize: "clamp(20px, 3vw, 36px)" }}
               >
                 {COPY.science.h}
               </h2>
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 {COPY.science.stats.map((stat, i) => (
                   <AnimatedStat
                     key={i}
@@ -562,7 +565,7 @@ export default function GenesisReveal() {
                   />
                 ))}
               </div>
-              <p className="font-mono text-[10px] text-white/20 mt-6">
+              <p className="font-mono text-[10px] text-white/20 mt-6 text-center md:text-left">
                 {COPY.science.source}
               </p>
             </div>
@@ -570,13 +573,13 @@ export default function GenesisReveal() {
 
           {/* SECTION 3: THE 4 PILLARS (left) */}
           <div
-            className="absolute inset-0 flex items-center pointer-events-none z-10 px-4"
+            className="absolute inset-0 flex items-end md:items-center justify-center md:justify-start pointer-events-none z-10 px-4 pb-[15vh] md:pb-0"
             style={{ opacity: sectionOpacities[3], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="ml-[5%] max-w-[90%] md:max-w-[38%]">
+            <div className="w-full max-w-[95%] md:ml-[5%] md:max-w-[38%]">
               <h2
-                className="vite-h2 text-white mb-6"
-                style={{ fontSize: "clamp(22px, 3vw, 36px)" }}
+                className="vite-h2 text-white mb-6 text-center md:text-left"
+                style={{ fontSize: "clamp(20px, 3vw, 36px)" }}
               >
                 {COPY.pillars.h}
               </h2>
@@ -584,7 +587,7 @@ export default function GenesisReveal() {
                 {COPY.pillars.items.map((item, i) => (
                   <motion.div
                     key={i}
-                    className="flex items-start gap-3 bg-white/5 border border-nickel rounded-xl p-3"
+                    className="flex items-start gap-3 bg-white/5 border border-nickel rounded-xl p-3 backdrop-blur-sm md:backdrop-blur-none"
                     initial={{ opacity: 0, x: -30 }}
                     animate={
                       sectionOpacities[3] > 0.3
@@ -593,12 +596,12 @@ export default function GenesisReveal() {
                     }
                     transition={{ delay: i * 0.12, duration: 0.4 }}
                   >
-                    <span className="text-xl flex-shrink-0">{item.icon}</span>
+                    <span className="text-lg md:text-xl flex-shrink-0">{item.icon}</span>
                     <div>
-                      <p className="font-mono text-[13px] font-bold text-white">
+                      <p className="font-mono text-xs md:text-[13px] font-bold text-white">
                         {item.title}
                       </p>
-                      <p className="text-[12px] text-white/60 mt-0.5">{item.desc}</p>
+                      <p className="text-[11px] md:text-[12px] text-white/60 mt-0.5">{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -608,13 +611,13 @@ export default function GenesisReveal() {
 
           {/* SECTION 4: THE VEHICLE (right, glass-card) */}
           <div
-            className="absolute inset-0 flex items-center justify-end pointer-events-none z-10 px-4"
+            className="absolute inset-0 flex items-end md:items-center justify-center md:justify-end pointer-events-none z-10 px-4 pb-[15vh] md:pb-0"
             style={{ opacity: sectionOpacities[4], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="glass-card mr-[5%] max-w-[90%] md:max-w-[38%]">
+            <div className="glass-card w-full max-w-[95%] md:mr-[5%] md:max-w-[38%]">
               <h2
                 className="vite-h2 text-white mb-4"
-                style={{ fontSize: "clamp(22px, 3vw, 36px)" }}
+                style={{ fontSize: "clamp(20px, 3vw, 36px)" }}
               >
                 {COPY.vehicle.h}
               </h2>
@@ -625,7 +628,7 @@ export default function GenesisReveal() {
               <p className="text-white/90 text-sm md:text-base leading-relaxed whitespace-pre-line mb-4">
                 {COPY.vehicle.body2}
               </p>
-              <p className="font-mono text-vite text-sm font-semibold">
+              <p className="font-mono text-vite text-xs md:text-sm font-semibold">
                 {COPY.vehicle.accent}
               </p>
             </div>
@@ -633,14 +636,14 @@ export default function GenesisReveal() {
 
           {/* SECTION 5: THE CTA (center-bottom) */}
           <div
-            className="absolute inset-0 flex flex-col items-center justify-end pb-[10vh] pointer-events-none z-10 px-4"
+            className="absolute inset-0 flex flex-col items-center justify-end pb-[15vh] md:pb-[10vh] pointer-events-none z-10 px-4"
             style={{ opacity: sectionOpacities[5], transition: "opacity 0.1s ease-out" }}
           >
             <div className="relative text-center">
               {/* Mega NGX background text */}
               <div
                 className="font-mono font-bold text-white/[0.08] leading-none select-none"
-                style={{ fontSize: "clamp(80px, 18vw, 180px)" }}
+                style={{ fontSize: "clamp(60px, 18vw, 180px)" }}
               >
                 {COPY.cta.mega}
               </div>
@@ -651,7 +654,7 @@ export default function GenesisReveal() {
                 <h2
                   className="font-mono font-bold text-white"
                   style={{
-                    fontSize: "clamp(36px, 7vw, 64px)",
+                    fontSize: "clamp(28px, 7vw, 64px)",
                     textShadow: "0 0 40px rgba(108, 59, 255, 0.6), 0 0 80px rgba(108, 59, 255, 0.3)",
                   }}
                 >
@@ -660,25 +663,25 @@ export default function GenesisReveal() {
               </div>
             </div>
 
-            <p className="font-mono text-[11px] tracking-[0.5em] uppercase text-white/40 mt-4">
+            <p className="font-mono text-[9px] md:text-[11px] tracking-[0.4em] md:tracking-[0.5em] uppercase text-white/40 mt-4">
               {COPY.cta.tagline}
             </p>
 
             <p
-              className="italic text-white/70 text-center mt-4 whitespace-pre-line max-w-md"
-              style={{ fontSize: "clamp(14px, 1.5vw, 18px)" }}
+              className="italic text-white/70 text-center mt-4 whitespace-pre-line max-w-sm md:max-w-md"
+              style={{ fontSize: "clamp(13px, 1.5vw, 18px)" }}
             >
               {COPY.cta.quote}
             </p>
 
             <button
               onClick={scrollToSystem}
-              className="btn-glow font-mono font-bold text-sm text-white px-8 py-3 rounded-full mt-6 pointer-events-auto cursor-pointer"
+              className="btn-glow font-mono font-bold text-xs md:text-sm text-white px-6 py-2.5 md:px-8 md:py-3 rounded-full mt-6 pointer-events-auto cursor-pointer"
             >
               {COPY.cta.cta}
             </button>
 
-            <p className="text-[11px] text-white/30 mt-3">{COPY.cta.sub}</p>
+            <p className="text-[10px] md:text-[11px] text-white/30 mt-3">{COPY.cta.sub}</p>
           </div>
         </div>
       </div>
@@ -898,218 +901,229 @@ export default function GenesisReveal() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
+          PERFORMANCE GRID
+          ═══════════════════════════════════════════════════════════════ */}
+      <PerformanceGrid />
+
+      {/* ═══════════════════════════════════════════════════════════════
           CAPABILITY DETAILS MODAL
           ═══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
-        {selectedCapability && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6"
-          >
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-md"
-              onClick={() => setSelectedCapability(null)}
-            />
-
-            {/* Modal Content */}
+        {
+          selectedCapability && (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-4xl bg-[#0a0a0a] border border-vite/30 rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(108,59,255,0.15)] flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6"
             >
-              {/* Close Button */}
-              <button
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-md"
                 onClick={() => setSelectedCapability(null)}
-                className="absolute top-4 right-4 md:top-6 md:right-6 z-20 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+              />
+
+              {/* Modal Content */}
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-4xl bg-[#0a0a0a] border border-vite/30 rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(108,59,255,0.15)] flex flex-col md:flex-row max-h-[90vh] md:max-h-[85vh]"
               >
-                <X size={20} />
-              </button>
+                {/* Close Button */}
+                <button
+                  onClick={() => setSelectedCapability(null)}
+                  className="absolute top-4 right-4 md:top-6 md:right-6 z-20 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
 
-              {/* Left Column: Identify */}
-              <div className="w-full md:w-5/12 p-8 md:p-10 bg-gradient-to-br from-vite/5 to-transparent flex flex-col justify-between border-b md:border-b-0 md:border-r border-white/10 relative overflow-hidden">
-                {/* Decorative background blur */}
-                <div className="absolute top-0 left-0 w-64 h-64 bg-vite/10 blur-[100px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-
-                <div>
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-vite/10 border border-vite/20 text-vite mb-6">
-                    {getCapabilityIcon(selectedCapability.icon)}
-                  </div>
-                  <p className="capability-tag text-vite/80 mb-3">{selectedCapability.tag}</p>
-                  <h3 className="font-mono text-2xl md:text-3xl text-white leading-tight">
-                    {selectedCapability.title}
-                  </h3>
-                  <div className="w-12 h-1 bg-vite mt-6" />
-                </div>
-
-                <div className="mt-8 md:mt-auto">
-                  <p className="font-mono text-sm text-white/60 uppercase tracking-widest mb-2">Principios</p>
-                  <p className="text-lg text-white font-medium leading-relaxed">
-                    {selectedCapability.details.subtitle}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Column: Deep Dive */}
-              <div className="w-full md:w-7/12 p-8 md:p-10 flex flex-col overflow-y-auto">
-
-                {/* Problem / Solution Block */}
-                <div className="space-y-8">
-                  <div>
-                    <h4 className="flex items-center gap-2 font-mono text-sm text-red-400 uppercase tracking-wider mb-3">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> El Problema
-                    </h4>
-                    <p className="text-white/80 leading-relaxed text-base md:text-lg">
-                      {selectedCapability.details.problem}
-                    </p>
-                  </div>
+                {/* Left Column: Identify */}
+                <div className="w-full md:w-5/12 p-8 md:p-10 bg-gradient-to-br from-vite/5 to-transparent flex flex-col justify-between border-b md:border-b-0 md:border-r border-white/10 relative overflow-hidden">
+                  {/* Decorative background blur */}
+                  <div className="absolute top-0 left-0 w-64 h-64 bg-vite/10 blur-[100px] -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
                   <div>
-                    <h4 className="flex items-center gap-2 font-mono text-sm text-vite uppercase tracking-wider mb-3">
-                      <span className="w-1.5 h-1.5 rounded-full bg-vite" /> La Solución NGX
-                    </h4>
-                    <p className="text-white/80 leading-relaxed text-base md:text-lg">
-                      {selectedCapability.details.solution}
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-vite/10 border border-vite/20 text-vite mb-6">
+                      {getCapabilityIcon(selectedCapability.icon)}
+                    </div>
+                    <p className="capability-tag text-vite/80 mb-3">{selectedCapability.tag}</p>
+                    <h3 className="font-mono text-2xl md:text-3xl text-white leading-tight">
+                      {selectedCapability.title}
+                    </h3>
+                    <div className="w-12 h-1 bg-vite mt-6" />
+                  </div>
+
+                  <div className="mt-8 md:mt-auto">
+                    <p className="font-mono text-sm text-white/60 uppercase tracking-widest mb-2">Principios</p>
+                    <p className="text-lg text-white font-medium leading-relaxed">
+                      {selectedCapability.details.subtitle}
                     </p>
                   </div>
                 </div>
 
-                {/* Key Stat Box */}
-                <div className="mt-10 p-6 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-mono text-xs text-white/50 uppercase tracking-widest mb-1">
-                      {selectedCapability.details.statLabel}
-                    </p>
-                    <p className="text-3xl md:text-4xl font-mono font-bold text-white">
-                      {selectedCapability.details.stat}
-                    </p>
-                  </div>
-                  <div className="opacity-20 text-vite">
-                    <Activity size={48} strokeWidth={1} />
-                  </div>
-                </div>
+                {/* Right Column: Deep Dive */}
+                <div className="w-full md:w-7/12 p-8 md:p-10 flex flex-col overflow-y-auto">
 
-              </div>
+                  {/* Problem / Solution Block */}
+                  <div className="space-y-8">
+                    <div>
+                      <h4 className="flex items-center gap-2 font-mono text-sm text-red-400 uppercase tracking-wider mb-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> El Problema
+                      </h4>
+                      <p className="text-white/80 leading-relaxed text-base md:text-lg">
+                        {selectedCapability.details.problem}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="flex items-center gap-2 font-mono text-sm text-vite uppercase tracking-wider mb-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-vite" /> La Solución NGX
+                      </h4>
+                      <p className="text-white/80 leading-relaxed text-base md:text-lg">
+                        {selectedCapability.details.solution}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Key Stat Box */}
+                  <div className="mt-10 p-6 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-mono text-xs text-white/50 uppercase tracking-widest mb-1">
+                        {selectedCapability.details.statLabel}
+                      </p>
+                      <p className="text-3xl md:text-4xl font-mono font-bold text-white">
+                        {selectedCapability.details.stat}
+                      </p>
+                    </div>
+                    <div className="opacity-20 text-vite">
+                      <Activity size={48} strokeWidth={1} />
+                    </div>
+                  </div>
+
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )
+        }
+      </AnimatePresence >
 
       {/* ═══════════════════════════════════════════════════════════════
           CAL.COM MODAL
           ═══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
-        {activeIntegration === 'cal' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6"
-          >
-            <div
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
-              onClick={() => setActiveIntegration('none')}
-            />
-
+        {
+          activeIntegration === 'cal' && (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-5xl h-[85vh] bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
-                <p className="font-mono text-sm tracking-widest">ESTRATEGIA HUMANA</p>
-                <button onClick={() => setActiveIntegration('none')}>
-                  <X className="text-white/60 hover:text-white transition-colors" />
-                </button>
-              </div>
-              <div className="flex-grow w-full h-full bg-white">
-                {/* Cal Embed Iframe */}
-                <iframe
-                  src={CAL_LINK}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  title="Cal.com Scheduling"
-                ></iframe>
-              </div>
+              <div
+                className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                onClick={() => setActiveIntegration('none')}
+              />
+
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                className="relative w-full max-w-5xl h-[85vh] bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+              >
+                <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
+                  <p className="font-mono text-sm tracking-widest">ESTRATEGIA HUMANA</p>
+                  <button onClick={() => setActiveIntegration('none')}>
+                    <X className="text-white/60 hover:text-white transition-colors" />
+                  </button>
+                </div>
+                <div className="flex-grow w-full h-full bg-[#111]">
+                  {/* Cal Embed Iframe */}
+                  <iframe
+                    src={`${CAL_LINK}?theme=dark`}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    title="Cal.com Scheduling"
+                    allow="camera; microphone; autoplay; fullscreen"
+                  ></iframe>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )
+        }
+      </AnimatePresence >
 
       {/* ═══════════════════════════════════════════════════════════════
           ELEVENLABS AGENT MODAL
           ═══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
-        {activeIntegration === 'agent' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6"
-          >
-            <div
-              className="absolute inset-0 bg-black/90 backdrop-blur-xl"
-              onClick={() => setActiveIntegration('none')}
-            />
-
+        {
+          activeIntegration === 'agent' && (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-md bg-black border border-vite/50 rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(108,59,255,0.2)] flex flex-col h-[700px] max-h-[90vh]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6"
             >
-              {/* Terminal Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-vite/20 bg-vite/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-vite animate-pulse" />
-                  <p className="font-mono text-sm tracking-widest text-vite">GENESIS CORE</p>
+              <div
+                className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+                onClick={() => setActiveIntegration('none')}
+              />
+
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="relative w-full max-w-md bg-black border border-vite/50 rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(108,59,255,0.2)] flex flex-col h-[700px] max-h-[90vh]"
+              >
+                {/* Terminal Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-vite/20 bg-vite/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-vite animate-pulse" />
+                    <p className="font-mono text-sm tracking-widest text-vite">GENESIS CORE</p>
+                  </div>
+                  <button onClick={() => setActiveIntegration('none')}>
+                    <X className="text-white/60 hover:text-white transition-colors" />
+                  </button>
                 </div>
-                <button onClick={() => setActiveIntegration('none')}>
-                  <X className="text-white/60 hover:text-white transition-colors" />
-                </button>
-              </div>
 
-              {/* Agent Container */}
-              <div className="flex-grow w-full relative bg-black/50 flex flex-col items-center justify-center p-8 text-center">
-                {/* Placeholder for ElevenLabs Widget */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
-                  <Brain size={120} strokeWidth={0.5} className="text-vite" />
-                </div>
+                {/* Agent Container */}
+                <div className="flex-grow w-full relative bg-black/50 flex flex-col items-center justify-center p-8 text-center">
+                  {/* Placeholder for ElevenLabs Widget */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
+                    <Brain size={120} strokeWidth={0.5} className="text-vite" />
+                  </div>
 
-                <p className="text-white/60 text-sm mb-6 relative z-10">
-                  Conectando con el núcleo neuronal...
-                </p>
-
-                {/* INSTRUCTION FOR USER */}
-                <div className="bg-vite/10 border border-vite/30 p-4 rounded-lg text-left w-full relative z-10">
-                  <p className="text-xs text-vite font-mono mb-2">[ SYSTEM_MESSAGE ]</p>
-                  <p className="text-xs text-white/70 font-mono">
-                    Para activar el agente, inserta tu <code>&lt;elevenlabs-convai&gt;</code> script aquí en el código.
-                    <br /><br />
-                    ID del Agente requerida: <span className="text-white">{AGENT_ID}</span>
+                  <p className="text-white/60 text-sm mb-6 relative z-10">
+                    Conectando con el núcleo neuronal...
                   </p>
-                </div>
 
-                {/* Example of where the widget code would go */}
-                {/* 
+                  {/* INSTRUCTION FOR USER */}
+                  <div className="bg-vite/10 border border-vite/30 p-4 rounded-lg text-left w-full relative z-10">
+                    <p className="text-xs text-vite font-mono mb-2">[ SYSTEM_MESSAGE ]</p>
+                    <p className="text-xs text-white/70 font-mono">
+                      Para activar el agente, inserta tu <code>&lt;elevenlabs-convai&gt;</code> script aquí en el código.
+                      <br /><br />
+                      ID del Agente requerida: <span className="text-white">{AGENT_ID}</span>
+                    </p>
+                  </div>
+
+                  {/* Example of where the widget code would go */}
+                  {/* 
                       <elevenlabs-convai agent-id={AGENT_ID}></elevenlabs-convai>
                       <script src="https://elevenlabs.io/convai-widget/index.js" async type="text/javascript"></script>
                     */}
-              </div>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )
+        }
+      </AnimatePresence >
 
       {/* ═══════════════════════════════════════════════════════════════
           FOOTER
           ═══════════════════════════════════════════════════════════════ */}
-      < div className="vite-section vite-frame" style={{ background: TOKENS.bg }
-      }>
+      <div className="vite-section vite-frame" style={{ background: TOKENS.bg }}>
         <div className="max-w-content mx-auto px-6 md:px-10 py-12 flex items-center justify-between">
           <p className="font-mono text-sm">
             <span className="text-white">NGX</span>{" "}
@@ -1119,7 +1133,7 @@ export default function GenesisReveal() {
             &copy; 2026 NGX Inc. Performance &amp; Longevity.
           </p>
         </div>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }

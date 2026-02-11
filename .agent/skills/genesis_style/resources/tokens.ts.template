@@ -1,0 +1,34 @@
+
+// ═══════════════════════════════════════════════════════════════
+// NGX GENESIS REVEAL — Design Tokens Template
+// Design System: NGX Vite Style
+// ═══════════════════════════════════════════════════════════════
+
+export const TOKENS = {
+  bg: "#010101",          // Exact video frame background (sampled)
+  bgPrimary: "#16171d",   // Vite primary surface
+  bgAlt: "#14121a",       // Elevated surfaces
+  bgDeep: "#0c0912",      // Deepest
+  border: "#3b3440",      // Section dividers
+  electric: "#6c3bff",    // Electric violet
+  vite: "#b39aff",        // Primary brand
+  brand: "#6b1eb9",       // Deep purple
+  zest: "#22ff73",        // Green accent
+  aqua: "#32f3e9",        // Aqua accent
+  text1: "#ffffff",
+  text2: "#98989f",
+  text3: "#6a6a71",
+  grey: "#827a89",
+} as const;
+
+export const POST_SCROLL_THEME = {
+  violetBase: "#6D00FF",
+  violetSoft: "rgba(109, 0, 255, 0.2)",
+  violetGlow: "rgba(109, 0, 255, 0.36)",
+  glassBorder: "rgba(109, 0, 255, 0.34)",
+  glassFill: "rgba(255, 255, 255, 0.035)",
+  glassHighlight: "rgba(255, 255, 255, 0.26)",
+} as const;
+
+export const TOTAL_FRAMES = 120; // Default frame count
+export const SCROLL_HEIGHT_VH = 600; // 6x viewport height for scrollytelling depth

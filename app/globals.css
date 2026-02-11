@@ -224,14 +224,26 @@ body {
   font-family: "JetBrains Mono", monospace;
   font-weight: 700;
   line-height: 1.12;
-  letter-spacing: -3px;
+  letter-spacing: -1.5px;
+}
+
+@media (min-width: 768px) {
+  .vite-h1 {
+    letter-spacing: -3px;
+  }
 }
 
 .vite-h2 {
   font-family: "JetBrains Mono", monospace;
   font-weight: 700;
   line-height: 1.0;
-  letter-spacing: -1.2px;
+  letter-spacing: -0.8px;
+}
+
+@media (min-width: 768px) {
+  .vite-h2 {
+    letter-spacing: -1.2px;
+  }
 }
 
 .vite-label {
