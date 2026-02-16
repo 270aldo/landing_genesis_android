@@ -42,7 +42,7 @@ export const POST_SCROLL_THEME = {
 } as const;
 
 export const TOTAL_FRAMES = 120;
-export const SCROLL_HEIGHT_VH = 600; // 6x viewport
+export const SCROLL_HEIGHT_VH = 1200; // 12x viewport for smoother pacing
 export const CTA_TARGET_ID = "sistema";
 
 // Frame naming: genesis_000.webp through genesis_119.webp

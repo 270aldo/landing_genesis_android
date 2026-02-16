@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties }
 import { useScroll, motion, useMotionValueEvent, AnimatePresence } from "framer-motion";
 import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare } from "lucide-react";
 import PerformanceGrid from "./PerformanceGrid";
+import UserJourney from "./UserJourney";
 import {
   TOKENS,
   POST_SCROLL_THEME,
@@ -890,6 +891,11 @@ export default function GenesisReveal() {
           PERFORMANCE GRID (TU ROL / CÓMO FUNCIONA)
           ═══════════════════════════════════════════════════════════════ */}
       <PerformanceGrid />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          USER JOURNEY (TU ROL)
+          ═══════════════════════════════════════════════════════════════ */}
+      <UserJourney />
 
       {/* ═══════════════════════════════════════════════════════════════
           CTA / CONTACT SECTION
