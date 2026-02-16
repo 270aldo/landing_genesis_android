@@ -1,12 +1,14 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
+import NextImage from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare, TrendingUp, User } from "lucide-react";
+import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare, TrendingUp } from "lucide-react";
 import ForWhom from "./ForWhom";
 import HowItWorks from "./HowItWorks";
 import SocialProof from "./SocialProof";
 import PricingContext from "./PricingContext";
+import NarrativeVisualLayer from "./NarrativeVisualLayer";
 import {
   TOKENS,
   POST_SCROLL_THEME,
@@ -20,6 +22,8 @@ import {
   SYSTEM_SECTION_COPY,
   DUO_COPY,
   CONTACT_SECTION,
+  VISUAL_ASSETS,
+  SECTION_VISUALS,
   getFramePath,
   type CapabilityIconId,
   type NarrativeSection,
@@ -313,9 +317,8 @@ export default function GenesisReveal() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Placeholder Config - USER TO REPLACE
-  const CAL_LINK = "https://cal.com/aldoolivas";
-  const AGENT_ID = "replace-with-your-elevenlabs-agent-id";
+  const CAL_LINK = process.env.NEXT_PUBLIC_CAL_LINK ?? "https://cal.com/aldoolivas";
+  const AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID ?? "";
 
   // --- Refs ---
   const containerRef = useRef<HTMLDivElement>(null);
@@ -468,11 +471,7 @@ export default function GenesisReveal() {
     []
   );
 
-  const textures = [
-    "/assets/abstract_tech_texture_1.png",
-    "/assets/abstract_tech_texture_2.png",
-    "/assets/abstract_tech_texture_3.png",
-  ];
+  const textures = VISUAL_ASSETS.textures;
 
   // ═══════════════════════════════════════════════════════════════
   // LOADING SCREEN
@@ -635,14 +634,29 @@ export default function GenesisReveal() {
             className="absolute inset-0 flex items-start md:items-center justify-center md:justify-end pointer-events-none z-10 px-4 pt-[15vh] md:pt-0"
             style={{ opacity: sectionOpacities[2], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="liquid-card rounded-2xl w-full max-w-[95%] md:mr-[5%] md:max-w-[38%] p-6 md:p-8">
+            <div className="liquid-card rounded-2xl w-full max-w-[95%] md:mr-[5%] md:max-w-[42%] p-6 md:p-8 relative overflow-hidden">
+              <div className={`relative rounded-xl border border-vite/25 overflow-hidden mb-6 ${SECTION_VISUALS.science.mobileEnabled ? "block" : "hidden md:block"}`}>
+                <div className="relative min-h-[170px]">
+                  <NarrativeVisualLayer
+                    sectionId="science"
+                    opacity={sectionOpacities[2]}
+                    className="absolute inset-0"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/60" />
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                    <p className="font-mono text-[10px] tracking-[0.26em] text-white/70 uppercase">BIO-ANALYTICS</p>
+                    <p className="font-mono text-[10px] tracking-widest text-vite">LIVE DATA</p>
+                  </div>
+                </div>
+              </div>
+
               <h2
-                className="vite-h2 text-white mb-6 text-center md:text-left"
+                className="vite-h2 text-white mb-6 text-center md:text-left relative z-10"
                 style={{ fontSize: "clamp(20px, 3vw, 36px)" }}
               >
                 {COPY.science.h}
               </h2>
-              <div className="space-y-4 md:space-y-6">
+              <div className="space-y-4 md:space-y-6 relative z-10">
                 {COPY.science.stats.map((stat, i) => (
                   <AnimatedStat
                     key={i}
@@ -654,7 +668,7 @@ export default function GenesisReveal() {
                   />
                 ))}
               </div>
-              <p className="font-mono text-[10px] text-white/20 mt-6 text-center md:text-left">
+              <p className="font-mono text-[10px] text-white/20 mt-6 text-center md:text-left relative z-10">
                 {COPY.science.source}
               </p>
             </div>
@@ -676,7 +690,7 @@ export default function GenesisReveal() {
                 {COPY.pillars.items.map((item, i) => (
                   <motion.div
                     key={i}
-                    className="liquid-card flex items-start gap-3 rounded-xl p-3"
+                    className="liquid-card flex items-start gap-3 rounded-xl p-3 relative overflow-hidden"
                     initial={{ opacity: 0, x: -30 }}
                     animate={
                       sectionOpacities[3] > 0.3
@@ -685,8 +699,18 @@ export default function GenesisReveal() {
                     }
                     transition={{ delay: i * 0.12, duration: 0.4 }}
                   >
+                    <div className={`absolute right-2 top-2 w-14 h-14 rounded-lg border border-vite/25 overflow-hidden ${SECTION_VISUALS.pillars.mobileEnabled ? "" : "hidden md:block"}`}>
+                      <NarrativeVisualLayer
+                        sectionId="pillars"
+                        opacity={sectionOpacities[3]}
+                        compact
+                        className="absolute inset-0"
+                        assetOverride={i % 2 === 0 ? "holoPillars" : "holoScience"}
+                      />
+                      <div className="absolute inset-0 bg-black/25" />
+                    </div>
                     <span className="flex-shrink-0">{getPillarIcon(item.icon)}</span>
-                    <div>
+                    <div className="pr-0 md:pr-16">
                       <p className="font-mono text-xs md:text-[13px] font-bold text-white">
                         {item.title}
                       </p>
@@ -703,21 +727,27 @@ export default function GenesisReveal() {
             className="absolute inset-0 flex items-end md:items-center justify-center md:justify-end pointer-events-none z-10 px-4 pb-[15vh] md:pb-0"
             style={{ opacity: sectionOpacities[4], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="glass-card w-full max-w-[95%] md:mr-[5%] md:max-w-[38%]">
+            <div className="glass-card w-full max-w-[95%] md:mr-[5%] md:max-w-[38%] relative overflow-hidden">
+              <NarrativeVisualLayer
+                sectionId="vehicle"
+                opacity={sectionOpacities[4]}
+                className={`absolute inset-0 ${SECTION_VISUALS.vehicle.mobileEnabled ? "" : "hidden md:block"}`}
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/45" />
               <h2
-                className="vite-h2 text-white mb-4"
+                className="vite-h2 text-white mb-4 relative z-10"
                 style={{ fontSize: "clamp(20px, 3vw, 36px)" }}
               >
                 {COPY.vehicle.h}
               </h2>
-              <p className="text-white/90 text-sm md:text-base leading-relaxed mb-4">
+              <p className="text-white/90 text-sm md:text-base leading-relaxed mb-4 relative z-10">
                 {COPY.vehicle.body}
               </p>
-              <div className="violet-divider my-4" />
-              <p className="text-white/90 text-sm md:text-base leading-relaxed whitespace-pre-line mb-4">
+              <div className="violet-divider my-4 relative z-10" />
+              <p className="text-white/90 text-sm md:text-base leading-relaxed whitespace-pre-line mb-4 relative z-10">
                 {COPY.vehicle.body2}
               </p>
-              <p className="font-mono text-vite text-xs md:text-sm font-semibold">
+              <p className="font-mono text-vite text-xs md:text-sm font-semibold relative z-10">
                 {COPY.vehicle.accent}
               </p>
             </div>
@@ -879,41 +909,25 @@ export default function GenesisReveal() {
             {DUO_COPY.subtitle}
           </p>
 
-          {/* Hero Photo Placeholder */}
+          {/* Duo Hero Visual */}
           <div className="liquid-card rounded-2xl overflow-hidden mb-6">
-            <div className="relative w-full aspect-[21/9] bg-gradient-to-br from-vite/10 via-black/50 to-transparent flex items-center justify-center">
-              {/* Decorative Background */}
-              <div className="absolute inset-0 noise-overlay opacity-20" />
-              <div className="absolute inset-0 bg-gradient-to-r from-vite/5 via-transparent to-white/5" />
-
-              {/* Icons Trio */}
-              <div className="relative z-10 flex items-center justify-center gap-12 md:gap-20">
-                {/* Aldo */}
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-                    <User size={32} className="text-white/70" strokeWidth={1.5} />
-                  </div>
-                  <p className="font-mono text-xs md:text-sm text-white/60 tracking-widest">ALDO</p>
-                </div>
-
-                {/* Connector */}
-                <div className="w-12 h-12 rounded-full bg-black border-2 border-vite flex items-center justify-center shadow-[0_0_30px_rgba(108,59,255,0.5)]">
-                  <div className="w-3 h-3 bg-vite rounded-full animate-pulse" />
-                </div>
-
-                {/* Genesis */}
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-vite/10 border border-vite/30 flex items-center justify-center">
-                    <Cpu size={32} className="text-vite" strokeWidth={1.5} />
-                  </div>
-                  <p className="font-mono text-xs md:text-sm text-vite tracking-widest">GENESIS</p>
-                </div>
-              </div>
-
-              {/* Overlay Text */}
-              <div className="absolute bottom-4 right-6">
-                <p className="font-mono text-[10px] text-white/30 uppercase tracking-widest">
-                  [ Próximamente: Foto del Dúo ]
+            <div className="relative w-full aspect-[21/9]">
+              <NextImage
+                src={VISUAL_ASSETS.anatomyDuo}
+                alt="Aldo y Genesis en sesión híbrida"
+                fill
+                sizes="(max-width: 768px) 100vw, 1200px"
+                className="object-cover opacity-80"
+              />
+              <NarrativeVisualLayer sectionId="duo" opacity={1} className="absolute inset-0" />
+              <div className="absolute inset-0 noise-overlay opacity-10" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-black/65" />
+              <div className="absolute left-5 bottom-5 md:left-8 md:bottom-8 z-10">
+                <p className="font-mono text-[10px] md:text-xs tracking-[0.25em] uppercase text-white/65">
+                  HYBRID EXECUTION LAYER
+                </p>
+                <p className="font-mono text-vite text-sm md:text-base mt-2">
+                  HUMANO + IA EN SINCRONÍA
                 </p>
               </div>
             </div>
@@ -986,7 +1000,6 @@ export default function GenesisReveal() {
             {/* Human Option */}
             <button
               onClick={() => {
-                console.log("Human CTA clicked");
                 setActiveIntegration('cal');
               }}
               className="group liquid-card p-8 rounded-2xl flex flex-col items-center text-center hover:border-white/40 transition-all cursor-pointer"
@@ -1223,9 +1236,15 @@ export default function GenesisReveal() {
                   <div className="bg-vite/10 border border-vite/30 p-4 rounded-lg text-left w-full relative z-10">
                     <p className="text-xs text-vite font-mono mb-2">[ SYSTEM_MESSAGE ]</p>
                     <p className="text-xs text-white/70 font-mono">
-                      Para activar el agente, inserta tu <code>&lt;elevenlabs-convai&gt;</code> script aquí en el código.
-                      <br /><br />
-                      ID del Agente requerida: <span className="text-white">{AGENT_ID}</span>
+                      {AGENT_ID
+                        ? (
+                          <>
+                            Para activar el agente, inserta tu <code>&lt;elevenlabs-convai&gt;</code> script aquí en el código.
+                            <br /><br />
+                            ID del Agente cargada: <span className="text-white">{AGENT_ID}</span>
+                          </>
+                        )
+                        : "Configura NEXT_PUBLIC_ELEVENLABS_AGENT_ID para activar el widget de voz en producción."}
                     </p>
                   </div>
 

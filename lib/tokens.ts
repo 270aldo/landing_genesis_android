@@ -56,6 +56,80 @@ export const TOTAL_FRAMES = 120;
 export const SCROLL_HEIGHT_VH = 1200; // 12x viewport for smoother pacing
 export const CTA_TARGET_ID = "contacto";
 
+export const VISUAL_ASSETS = {
+  textures: [
+    "/assets/abstract_tech_texture_1_1770753343437.png",
+    "/assets/abstract_tech_texture_2_1770753357544.png",
+    "/assets/abstract_tech_texture_3_1770753372409.png",
+  ],
+  holoScience: "/assets/grid_engine.png",
+  holoPillars: "/assets/grid_mind.png",
+  anatomyVehicle: "/assets/fitness/rower.png",
+  anatomyDuo: "/assets/duo_working.png",
+} as const;
+
+export type VisualVariant = "none" | "holo-data" | "anatomy-scan";
+export type SectionVisualTarget = "hook" | "thesis" | "science" | "pillars" | "vehicle" | "duo";
+export type VisualImageAssetKey = Exclude<keyof typeof VISUAL_ASSETS, "textures">;
+
+export interface SectionVisualConfig {
+  variant: VisualVariant;
+  assetKey?: VisualImageAssetKey;
+  mobileEnabled: boolean;
+  opacity: number;
+  blendMode: "normal" | "overlay" | "screen";
+}
+
+export const SECTION_VISUALS: Record<SectionVisualTarget, SectionVisualConfig> = {
+  hook: {
+    variant: "none",
+    mobileEnabled: false,
+    opacity: 0,
+    blendMode: "normal",
+  },
+  thesis: {
+    variant: "none",
+    mobileEnabled: false,
+    opacity: 0,
+    blendMode: "normal",
+  },
+  science: {
+    variant: "holo-data",
+    assetKey: "holoScience",
+    mobileEnabled: false,
+    opacity: 0.65,
+    blendMode: "screen",
+  },
+  pillars: {
+    variant: "holo-data",
+    assetKey: "holoPillars",
+    mobileEnabled: false,
+    opacity: 0.6,
+    blendMode: "screen",
+  },
+  vehicle: {
+    variant: "anatomy-scan",
+    assetKey: "anatomyVehicle",
+    mobileEnabled: true,
+    opacity: 0.52,
+    blendMode: "overlay",
+  },
+  duo: {
+    variant: "anatomy-scan",
+    assetKey: "anatomyDuo",
+    mobileEnabled: true,
+    opacity: 0.48,
+    blendMode: "overlay",
+  },
+};
+
+export const VISUAL_MOTION = {
+  floatDistance: 8,
+  floatDuration: 7.5,
+  scanDuration: 4.2,
+  compactScale: 1.02,
+} as const;
+
 // Frame naming: genesis_000.webp through genesis_119.webp
 export function getFramePath(index: number): string {
   return `/sequence/genesis_${String(index).padStart(3, "0")}.webp`;
