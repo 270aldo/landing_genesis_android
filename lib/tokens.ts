@@ -131,22 +131,22 @@ export const COPY = {
     h: "Mis 4 Pilares de Operación",
     items: [
       {
-        icon: "🏋️",
+        icon: "Dumbbell",
         title: "Estímulo Inteligente",
         desc: "Diseño progresiones de fuerza y resistencia con dosis mínima efectiva para resultados sostenibles.",
       },
       {
-        icon: "🥩",
+        icon: "Beef",
         title: "Nutrición Centrada en Proteínas",
         desc: "Gestiono la estrategia nutricional con enfoque en masa magra, adherencia y precisión metabólica.",
       },
       {
-        icon: "🌙",
+        icon: "Moon",
         title: "Recuperación Optimizada",
         desc: "Orquesto sueño, estrés y recuperación para que cada sesión se convierta en adaptación real.",
       },
       {
-        icon: "📊",
+        icon: "TrendingUp",
         title: "Medición Real",
         desc: "Opero con biomarcadores y función. No persigo peso; optimizo capacidad física y longevidad.",
       },

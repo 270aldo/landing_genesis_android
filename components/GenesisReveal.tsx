@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
 import { useScroll, motion, useMotionValueEvent, AnimatePresence } from "framer-motion";
-import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare } from "lucide-react";
+import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare, TrendingUp, User } from "lucide-react";
 import PerformanceGrid from "./PerformanceGrid";
 import UserJourney from "./UserJourney";
 import {
@@ -80,7 +80,7 @@ function buildAmbientStyle(
 }
 
 function getCapabilityIcon(iconId: CapabilityIconId): JSX.Element {
-  const props = { size: 24, strokeWidth: 1.5, className: "text-vite" };
+  const props = { size: 24, strokeWidth: 1.5, style: { color: "#6D00FF" } };
   switch (iconId) {
     case "Dumbbell": return <Dumbbell {...props} />;
     case "Beef": return <Beef {...props} />;
@@ -89,6 +89,17 @@ function getCapabilityIcon(iconId: CapabilityIconId): JSX.Element {
     case "Cpu": return <Cpu {...props} />;
     case "Brain": return <Brain {...props} />;
     case "Accessibility": return <Accessibility {...props} />;
+    default: return <Activity {...props} />;
+  }
+}
+
+function getPillarIcon(iconId: string): JSX.Element {
+  const props = { size: 20, strokeWidth: 1.5, style: { color: "#6D00FF" } };
+  switch (iconId) {
+    case "Dumbbell": return <Dumbbell {...props} />;
+    case "Beef": return <Beef {...props} />;
+    case "Moon": return <Moon {...props} />;
+    case "TrendingUp": return <TrendingUp {...props} />;
     default: return <Activity {...props} />;
   }
 }
@@ -268,7 +279,7 @@ function AnimatedStat({
 
   return (
     <div>
-      <div className="stat-number" style={{ fontSize: "clamp(36px, 5vw, 48px)" }}>
+      <div className="stat-number" style={{ fontSize: "clamp(36px, 5vw, 48px)", color: "#6D00FF" }}>
         {count}
         {unit}
       </div>
@@ -545,7 +556,7 @@ export default function GenesisReveal() {
                 {COPY.hook.body}
               </p>
               <motion.p
-                className="font-mono text-[8vw] md:text-[6vw] font-black tracking-tighter text-vite leading-none z-20"
+                className="font-mono text-[8vw] md:text-[6vw] font-black tracking-tighter leading-none z-20"
                 initial={{ opacity: 0, scale: 2, filter: "blur(10px)" }}
                 animate={
                   sectionOpacities[0] > 0.5
@@ -559,6 +570,7 @@ export default function GenesisReveal() {
                   mass: 1.5,
                 }}
                 style={{
+                  color: "#6D00FF",
                   textShadow: "0 0 30px rgba(109, 0, 255, 0.8), 0 0 60px rgba(109, 0, 255, 0.4)",
                   animation: "pulseGlow 2s ease-in-out infinite alternate",
                 }}
@@ -592,7 +604,7 @@ export default function GenesisReveal() {
             className="absolute inset-0 flex items-start md:items-center justify-center md:justify-end pointer-events-none z-10 px-4 pt-[15vh] md:pt-0"
             style={{ opacity: sectionOpacities[2], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="w-full max-w-[95%] md:mr-[5%] md:max-w-[38%]">
+            <div className="liquid-card rounded-2xl w-full max-w-[95%] md:mr-[5%] md:max-w-[38%] p-6 md:p-8">
               <h2
                 className="vite-h2 text-white mb-6 text-center md:text-left"
                 style={{ fontSize: "clamp(20px, 3vw, 36px)" }}
@@ -633,7 +645,7 @@ export default function GenesisReveal() {
                 {COPY.pillars.items.map((item, i) => (
                   <motion.div
                     key={i}
-                    className="flex items-start gap-3 bg-white/5 border border-nickel rounded-xl p-3 backdrop-blur-sm md:backdrop-blur-none"
+                    className="liquid-card flex items-start gap-3 rounded-xl p-3"
                     initial={{ opacity: 0, x: -30 }}
                     animate={
                       sectionOpacities[3] > 0.3
@@ -642,7 +654,7 @@ export default function GenesisReveal() {
                     }
                     transition={{ delay: i * 0.12, duration: 0.4 }}
                   >
-                    <span className="text-lg md:text-xl flex-shrink-0">{item.icon}</span>
+                    <span className="flex-shrink-0">{getPillarIcon(item.icon)}</span>
                     <div>
                       <p className="font-mono text-xs md:text-[13px] font-bold text-white">
                         {item.title}
@@ -793,8 +805,7 @@ export default function GenesisReveal() {
                     }}
                   />
 
-                  <div className="relative z-10 flex items-center justify-between gap-3">
-                    <p className="capability-tag">{capability.tag}</p>
+                  <div className="relative z-10 flex items-center justify-end gap-3">
                     <span className="icon-chip bg-white/5 border-white/10 group-hover:border-vite/50 group-hover:bg-vite/10 transition-all">
                       {getCapabilityIcon(capability.icon)}
                     </span>
@@ -824,55 +835,74 @@ export default function GenesisReveal() {
           >
             Donde el criterio humano se multiplica.
           </h2>
-          <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl">
+          <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl mb-12">
             {DUO_COPY.subtitle}
           </p>
 
-          {/* New Duo Split Layout */}
-          <div className="mt-12 relative flex flex-col md:flex-row gap-6 md:gap-0 md:items-stretch">
+          {/* Hero Photo Placeholder */}
+          <div className="liquid-card rounded-2xl overflow-hidden mb-6">
+            <div className="relative w-full aspect-[21/9] bg-gradient-to-br from-vite/10 via-black/50 to-transparent flex items-center justify-center">
+              {/* Decorative Background */}
+              <div className="absolute inset-0 noise-overlay opacity-20" />
+              <div className="absolute inset-0 bg-gradient-to-r from-vite/5 via-transparent to-white/5" />
 
+              {/* Icons Trio */}
+              <div className="relative z-10 flex items-center justify-center gap-12 md:gap-20">
+                {/* Aldo */}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                    <User size={32} className="text-white/70" strokeWidth={1.5} />
+                  </div>
+                  <p className="font-mono text-xs md:text-sm text-white/60 tracking-widest">ALDO</p>
+                </div>
+
+                {/* Connector */}
+                <div className="w-12 h-12 rounded-full bg-black border-2 border-vite flex items-center justify-center shadow-[0_0_30px_rgba(108,59,255,0.5)]">
+                  <div className="w-3 h-3 bg-vite rounded-full animate-pulse" />
+                </div>
+
+                {/* Genesis */}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-vite/10 border border-vite/30 flex items-center justify-center">
+                    <Cpu size={32} className="text-vite" strokeWidth={1.5} />
+                  </div>
+                  <p className="font-mono text-xs md:text-sm text-vite tracking-widest">GENESIS</p>
+                </div>
+              </div>
+
+              {/* Overlay Text */}
+              <div className="absolute bottom-4 right-6">
+                <p className="font-mono text-[10px] text-white/30 uppercase tracking-widest">
+                  [ Próximamente: Foto del Dúo ]
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Split - Aldo & Genesis */}
+          <div className="relative flex flex-col md:flex-row gap-6 md:gap-0 md:items-stretch">
             {/* Left: Aldo */}
-            <div className="flex-1 liquid-card md:rounded-r-none md:border-r-0 border-b md:border-b border-l border-t rounded-2xl md:rounded-l-2xl p-8 flex flex-col relative group">
-              {/* Visual placeholder for Aldo until user provides image */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-vite/10 to-transparent blur-3xl -z-10" />
+            <div className="flex-1 liquid-card md:rounded-r-none md:border-r-0 p-8 flex flex-col">
               <p className="capability-tag text-vite">{DUO_COPY.aldo.label}</p>
               <h3 className="font-mono text-3xl text-white mt-2">{DUO_COPY.aldo.heading}</h3>
-              <div className="mt-6 flex-grow text-white/70 text-sm leading-relaxed">
+              <div className="mt-6 text-white/70 text-sm leading-relaxed">
                 {DUO_COPY.aldo.body}
-              </div>
-              <div className="mt-6 pt-6 border-t border-white/10">
-                <div className="bg-white/5 w-full aspect-[4/3] rounded-lg flex items-center justify-center border border-white/5">
-                  <span className="text-xs font-mono text-white/30 uppercase tracking-widest">[ Foto: Aldo ]</span>
-                </div>
               </div>
             </div>
 
-            {/* Central Connector (Desktop only) */}
-            <div className="hidden md:flex flex-col items-center justify-center relative z-20 w-12 -mx-6 pointer-events-none">
-              <div className="w-12 h-12 rounded-full bg-black border border-vite flex items-center justify-center shadow-[0_0_20px_rgba(108,59,255,0.4)] z-10">
+            {/* Center Connector (Desktop only) */}
+            <div className="hidden md:flex flex-col items-center justify-center relative z-20 w-12 -mx-6">
+              <div className="w-12 h-12 rounded-full bg-black border border-vite flex items-center justify-center shadow-[0_0_20px_rgba(108,59,255,0.4)]">
                 <div className="w-3 h-3 bg-vite rounded-full animate-pulse" />
               </div>
             </div>
 
-            {/* Mobile Connector */}
-            <div className="md:hidden flex items-center justify-center -my-3 z-20 pointer-events-none">
-              <div className="px-4 py-1 rounded-full bg-black border border-vite text-[10px] font-mono tracking-widest text-vite shadow-[0_0_15px_rgba(108,59,255,0.3)]">
-                SYNTHESIS
-              </div>
-            </div>
-
             {/* Right: Genesis */}
-            <div className="flex-1 liquid-card md:rounded-l-none md:border-l-0 border-b md:border-b border-r border-t rounded-2xl md:rounded-r-2xl p-8 flex flex-col relative group text-right items-end">
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-white/10 to-transparent blur-3xl -z-10" />
+            <div className="flex-1 liquid-card md:rounded-l-none md:border-l-0 p-8 flex flex-col text-right items-end">
               <p className="capability-tag text-white/50">{DUO_COPY.genesis.label}</p>
               <h3 className="font-mono text-3xl text-white mt-2">{DUO_COPY.genesis.heading}</h3>
-              <div className="mt-6 flex-grow text-white/70 text-sm leading-relaxed text-right">
+              <div className="mt-6 text-white/70 text-sm leading-relaxed text-right">
                 {DUO_COPY.genesis.body}
-              </div>
-              <div className="mt-6 pt-6 border-t border-white/10 w-full">
-                <div className="bg-white/5 w-full aspect-[4/3] rounded-lg flex items-center justify-center border border-white/5 ml-auto">
-                  <span className="text-xs font-mono text-white/30 uppercase tracking-widest">[ Foto: Genesis ]</span>
-                </div>
               </div>
             </div>
           </div>
