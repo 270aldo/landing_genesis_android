@@ -79,7 +79,7 @@ function buildAmbientStyle(
 }
 
 function getCapabilityIcon(iconId: CapabilityIconId): JSX.Element {
-  const props = { size: 24, strokeWidth: 1.5, className: "text-white/90" };
+  const props = { size: 24, strokeWidth: 1.5, className: "text-vite" };
   switch (iconId) {
     case "Dumbbell": return <Dumbbell {...props} />;
     case "Beef": return <Beef {...props} />;
@@ -92,7 +92,7 @@ function getCapabilityIcon(iconId: CapabilityIconId): JSX.Element {
   }
 }
 
-const FINAL_FRAME_HOLD_START = 0.92;
+const FINAL_FRAME_HOLD_START = 0.98;
 
 function progressToFrame(progress: number): number {
   const clamped = Math.min(Math.max(progress, 0), 1);
@@ -291,6 +291,14 @@ export default function GenesisReveal() {
   const [scrollReady, setScrollReady] = useState(false);
   const [selectedCapability, setSelectedCapability] = useState<CapabilityItem | null>(null);
   const [activeIntegration, setActiveIntegration] = useState<'none' | 'cal' | 'agent'>('none');
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Track scroll position for navbar styling
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Placeholder Config - USER TO REPLACE
   const CAL_LINK = "https://cal.com/aldoolivas";
@@ -456,6 +464,30 @@ export default function GenesisReveal() {
   return (
     <div className="min-h-screen text-white" style={{ background: TOKENS.bg }}>
       <GenesisAudio active={loaded} />
+
+      {/* ── NAVBAR ── */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${isScrolled
+          ? 'bg-black/80 backdrop-blur-md border-white/10 py-4'
+          : 'bg-transparent border-transparent py-6'
+          }`}
+      >
+        <div className="max-w-content mx-auto px-6 md:px-10 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-vite rounded-full animate-pulse" />
+            <span className="font-mono font-bold text-lg tracking-tighter text-white">
+              NGX <span className="text-vite">GENESIS</span>
+            </span>
+          </div>
+          <button
+            onClick={() => setActiveIntegration('cal')}
+            className="btn-glow font-mono font-bold text-[10px] md:text-xs text-white px-5 py-2 rounded-full tracking-widest transition-all hover:scale-105 active:scale-95"
+          >
+            INICIAR_PROTOCOLO
+          </button>
+        </div>
+      </nav>
+
       {/* ── SCROLL CONTAINER ── */}
       <div ref={containerRef} style={{ height: `${SCROLL_HEIGHT_VH}vh` }} className="relative">
         {/* ── STICKY VIEWPORT ── */}
@@ -512,10 +544,23 @@ export default function GenesisReveal() {
                 {COPY.hook.body}
               </p>
               <motion.p
-                className="font-mono text-vite text-base md:text-xl font-semibold"
-                initial={{ opacity: 0, y: 10 }}
-                animate={sectionOpacities[0] > 0.5 ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-                transition={{ delay: 0.8, duration: 0.6 }}
+                className="font-mono text-vite text-2xl md:text-4xl font-black uppercase tracking-wide"
+                initial={{ opacity: 0, scale: 2, filter: "blur(10px)" }}
+                animate={
+                  sectionOpacities[0] > 0.5
+                    ? { opacity: 1, scale: 1, filter: "blur(0px)" }
+                    : { opacity: 0, scale: 2, filter: "blur(10px)" }
+                }
+                transition={{
+                  type: "spring",
+                  damping: 12,
+                  stiffness: 120,
+                  mass: 1.5,
+                }}
+                style={{
+                  textShadow: "0 0 30px rgba(109, 0, 255, 0.8), 0 0 60px rgba(109, 0, 255, 0.4)",
+                  animation: "pulseGlow 2s ease-in-out infinite alternate",
+                }}
               >
                 {COPY.hook.accent}
               </motion.p>
@@ -537,7 +582,7 @@ export default function GenesisReveal() {
               <p className="text-white/90 text-sm md:text-base leading-relaxed mb-4">
                 {COPY.thesis.body}
               </p>
-              <p className="italic text-white/30 text-xs">{COPY.thesis.citation}</p>
+              {/* Citation removed per design decision */}
             </div>
           </div>
 
@@ -636,7 +681,7 @@ export default function GenesisReveal() {
 
           {/* SECTION 5: THE CTA (center-bottom) */}
           <div
-            className="absolute inset-0 flex flex-col items-center justify-end pb-[15vh] md:pb-[10vh] pointer-events-none z-10 px-4"
+            className="absolute inset-0 flex flex-col items-center justify-end pb-[15vh] md:pb-[10vh] pointer-events-none z-50 px-4"
             style={{ opacity: sectionOpacities[5], transition: "opacity 0.1s ease-out" }}
           >
             <div className="relative text-center">
@@ -842,6 +887,11 @@ export default function GenesisReveal() {
       </div >
 
       {/* ═══════════════════════════════════════════════════════════════
+          PERFORMANCE GRID (TU ROL / CÓMO FUNCIONA)
+          ═══════════════════════════════════════════════════════════════ */}
+      <PerformanceGrid />
+
+      {/* ═══════════════════════════════════════════════════════════════
           CTA / CONTACT SECTION
           ═══════════════════════════════════════════════════════════════ */}
       <div className="vite-section vite-frame relative overflow-hidden" style={{ background: TOKENS.bgPrimary }}>
@@ -899,11 +949,6 @@ export default function GenesisReveal() {
           </div>
         </div>
       </div>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          PERFORMANCE GRID
-          ═══════════════════════════════════════════════════════════════ */}
-      <PerformanceGrid />
 
       {/* ═══════════════════════════════════════════════════════════════
           CAPABILITY DETAILS MODAL

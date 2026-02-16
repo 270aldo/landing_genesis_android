@@ -391,3 +391,29 @@ export const PERFORMANCE_GRID = {
   },
 };
 
+export const USER_JOURNEY_SECTION = {
+  label: "TU ROL",
+  title: "Tú pones la voluntad. Nosotros la precisión.",
+  subtitle:
+    "Genesis no es un piloto automático; es un copiloto de alto rendimiento. Nuestra tecnología traduce la ciencia, pero tu disciplina traduce los datos en resultados.",
+  responsibilityNote:
+    "El 80% del éxito depende de tu ejecución diaria. Nosotros garantizamos que ese esfuerzo sea en la dirección correcta.",
+  steps: [
+    {
+      step: "01",
+      title: "Recolección de Datos",
+      desc: "Sincronizas tus biométricos y respondes a los requerimientos de la IA.",
+    },
+    {
+      step: "02",
+      title: "Ejecución Crítica",
+      desc: "Sigues el protocolo de entrenamiento y nutrición con precisión quirúrgica.",
+    },
+    {
+      step: "03",
+      title: "Feedback Operativo",
+      desc: "Reportas sensaciones y métricas para que el sistema se recalibre en tiempo real.",
+    },
+  ],
+};
+
