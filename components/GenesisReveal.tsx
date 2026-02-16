@@ -435,6 +435,17 @@ export default function GenesisReveal() {
     return SECTIONS.map((section) => getSectionOpacity(activeProgress, section));
   }, [scrollProgress, scrollReady]);
 
+  // Derive active section for Audio Engine
+  const activeSectionId = useMemo(() => {
+    const activeProgress = scrollReady ? scrollProgress : 0;
+    // Find the section that has the highest opacity or is "current"
+    // Using a simpler logic: if progress is within section start/end with some buffer
+    const current = SECTIONS.find(s =>
+      activeProgress >= s.scrollStart && activeProgress <= s.scrollEnd
+    );
+    return current ? current.id : null;
+  }, [scrollProgress, scrollReady]);
+
   const scrollToSystem = useCallback(() => {
     document.getElementById(CTA_TARGET_ID)?.scrollIntoView({
       behavior: "smooth",
@@ -495,7 +506,7 @@ export default function GenesisReveal() {
   // ═══════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen text-white" style={{ background: TOKENS.bg }}>
-      <GenesisAudio active={loaded} />
+      <GenesisAudio active={loaded} currentSection={activeSectionId} />
 
       {/* ── NAVBAR ── */}
       <nav

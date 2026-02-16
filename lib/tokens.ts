@@ -26,10 +26,21 @@ export const AUDIO = {
   baseUrl: "https://api.elevenlabs.io/v1/text-to-speech",
 } as const;
 
+export const AUDIO_ASSETS = {
+  ambience: "/audio/genesis_ambience.mp3",
+  hook: "/audio/genesis_hook.mp3",
+  thesis: "/audio/genesis_thesis.mp3",
+  science: "/audio/genesis_science.mp3",
+  pillars: "/audio/genesis_pillars.mp3",
+  vehicle: "/audio/genesis_vehicle.mp3",
+  cta: "/audio/genesis_cta.mp3",
+  intro: "/audio/genesis_intro.mp3",
+} as const;
+
 export const AUDIO_CONFIG = {
-  fadeDuration: 2000,
-  bgVolume: 0.3,
-  voiceVolume: 1.0,
+  fadeDuration: 2000, // ms
+  bgVolume: 0.25,     // Lowered slightly for voice clarity
+  voiceVolume: 0.9,   // Main narrative voice
 } as const;
 
 export const POST_SCROLL_THEME = {
