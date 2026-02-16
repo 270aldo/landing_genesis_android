@@ -545,7 +545,7 @@ export default function GenesisReveal() {
                 {COPY.hook.body}
               </p>
               <motion.p
-                className="font-mono text-vite text-2xl md:text-4xl font-black uppercase tracking-wide"
+                className="font-mono text-[8vw] md:text-[6vw] font-black tracking-tighter text-vite leading-none z-20"
                 initial={{ opacity: 0, scale: 2, filter: "blur(10px)" }}
                 animate={
                   sectionOpacities[0] > 0.5
