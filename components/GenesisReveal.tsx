@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
-import { useScroll, motion, useMotionValueEvent, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare, TrendingUp, User } from "lucide-react";
 import ForWhom from "./ForWhom";
 import HowItWorks from "./HowItWorks";
@@ -324,21 +324,18 @@ export default function GenesisReveal() {
   const rafRef = useRef<number>(0);
 
   // --- Scroll tracking ---
-  const { scrollYProgress } = useScroll({ target: containerRef });
-
-  // Force a deterministic top-start before enabling scroll-driven frame updates.
+  // Manual progress calculation scoped to the container element.
+  // Framer Motion's useScroll({ target }) maps progress to the entire page,
+  // which prevents later sections (vehicle, cta) from ever being reached.
   useEffect(() => {
     const previous = window.history.scrollRestoration;
     window.history.scrollRestoration = "manual";
     const resetScroll = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
-    let raf1 = 0;
-    let raf2 = 0;
-
     resetScroll();
-    raf1 = requestAnimationFrame(() => {
+    const raf1 = requestAnimationFrame(() => {
       resetScroll();
-      raf2 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         setScrollProgress(0);
         setCurrentFrame(0);
         setScrollReady(true);
@@ -347,17 +344,39 @@ export default function GenesisReveal() {
 
     return () => {
       cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
       window.history.scrollRestoration = previous;
     };
   }, []);
 
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
+  useEffect(() => {
     if (!scrollReady) return;
-    setScrollProgress(v);
-    const frameIndex = progressToFrame(v);
-    setCurrentFrame(Math.max(0, frameIndex));
-  });
+    let ticking = false;
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const el = containerRef.current;
+        if (!el) { ticking = false; return; }
+        const rect = el.getBoundingClientRect();
+        const containerH = el.offsetHeight;
+        const viewportH = window.innerHeight;
+        const scrollRange = containerH - viewportH;
+        if (scrollRange <= 0) { ticking = false; return; }
+        // progress 0 → container top at viewport top
+        // progress 1 → container bottom at viewport bottom
+        const raw = -rect.top / scrollRange;
+        const progress = Math.min(1, Math.max(0, raw));
+        setScrollProgress(progress);
+        setCurrentFrame(Math.max(0, progressToFrame(progress)));
+        ticking = false;
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll(); // initial sync
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [scrollReady]);
 
   // --- Preload images ---
   useEffect(() => {
