@@ -3,8 +3,10 @@
 import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
 import { useScroll, motion, useMotionValueEvent, AnimatePresence } from "framer-motion";
 import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare, TrendingUp, User } from "lucide-react";
-import PerformanceGrid from "./PerformanceGrid";
-import UserJourney from "./UserJourney";
+import ForWhom from "./ForWhom";
+import HowItWorks from "./HowItWorks";
+import SocialProof from "./SocialProof";
+import PricingContext from "./PricingContext";
 import {
   TOKENS,
   POST_SCROLL_THEME,
@@ -252,30 +254,29 @@ function AnimatedStat({
   delay: number;
 }) {
   const [count, setCount] = useState(0);
-  const [hasRun, setHasRun] = useState(false);
+  const hasStarted = useRef(false);
 
   useEffect(() => {
-    if ((!active && !hasRun) || hasRun) return;
-
-    // Once active, we mark as running and don't stop even if active becomes false (scrolling past)
-    setHasRun(true);
+    if (!active || hasStarted.current) return;
+    hasStarted.current = true;
 
     const timer = setTimeout(() => {
       const duration = 1200;
       const startTime = performance.now();
+      let rafId: number;
       function tick(now: number) {
         const elapsed = now - startTime;
         const t = Math.min(elapsed / duration, 1);
         const eased = 1 - Math.pow(1 - t, 3);
         setCount(Math.round(eased * value));
-        if (t < 1) requestAnimationFrame(tick);
+        if (t < 1) rafId = requestAnimationFrame(tick);
       }
-      requestAnimationFrame(tick);
+      rafId = requestAnimationFrame(tick);
+      // No cleanup for RAF — animation must finish once started
     }, delay);
-    return () => clearTimeout(timer);
-  }, [active, hasRun, value, delay]);
-
-  // Removed the reset logic so stats stick once viewed
+    // Don't clear timeout — once triggered, let it complete
+    return undefined;
+  }, [active, value, delay]);
 
   return (
     <div>
@@ -492,7 +493,7 @@ export default function GenesisReveal() {
             </span>
           </div>
           <button
-            onClick={() => setActiveIntegration('cal')}
+            onClick={() => document.getElementById(CTA_TARGET_ID)?.scrollIntoView({ behavior: "smooth", block: "start" })}
             className="btn-glow font-mono font-bold text-[10px] md:text-xs text-white px-5 py-2 rounded-full tracking-widest transition-all hover:scale-105 active:scale-95"
           >
             INICIAR_PROTOCOLO
@@ -747,7 +748,7 @@ export default function GenesisReveal() {
       {/* ═══════════════════════════════════════════════════════════════
           POST-SCROLL: EL SISTEMA
           ═══════════════════════════════════════════════════════════════ */}
-      <div id={CTA_TARGET_ID} className="vite-section vite-frame section-ambient-sistema" style={systemAmbientStyle}>
+      <div id="sistema" className="vite-section vite-frame section-ambient-sistema" style={systemAmbientStyle}>
         <div className="max-w-content mx-auto px-6 md:px-10 py-24 md:py-28 text-center">
           <div className="liquid-card mx-auto max-w-3xl rounded-2xl px-6 md:px-10 py-10 md:py-12">
             <p className="vite-label text-white/40 mb-6">{SYSTEM_SECTION_COPY.label}</p>
@@ -765,20 +766,29 @@ export default function GenesisReveal() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          MIS CAPACIDADES
+          ¿PARA QUIÉN ES ESTO?
+          ═══════════════════════════════════════════════════════════════ */}
+      <ForWhom />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          CÓMO FUNCIONA
+          ═══════════════════════════════════════════════════════════════ */}
+      <HowItWorks />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          CAPACIDADES
           ═══════════════════════════════════════════════════════════════ */}
       <div className="vite-section vite-frame section-ambient-capacidades" style={capabilitiesAmbientStyle}>
         <div className="max-w-content mx-auto px-6 md:px-10 py-24 md:py-28">
-          <p className="vite-label text-white/40 mb-5">MIS CAPACIDADES</p>
+          <p className="vite-label text-white/40 mb-5">CAPACIDADES</p>
           <h2
             className="vite-h2 text-white mb-5"
             style={{ fontSize: "clamp(24px, 3.5vw, 40px)" }}
           >
-            No soy un generalista.
+            Especialización, no generalismo.
           </h2>
           <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl">
-            Soy un conjunto de módulos clínico-tecnológicos, coordinados para traducir ciencia en
-            decisiones concretas, sostenibles y personalizadas.
+            Cada área de tu salud tiene su propio módulo de análisis. Nada genérico.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-5 mt-10 md:mt-12">
@@ -833,7 +843,7 @@ export default function GenesisReveal() {
             className="vite-h2 text-white mb-5"
             style={{ fontSize: "clamp(24px, 3.5vw, 40px)" }}
           >
-            Donde el criterio humano se multiplica.
+            La ventaja injusta.
           </h2>
           <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl mb-12">
             {DUO_COPY.subtitle}
@@ -918,19 +928,19 @@ export default function GenesisReveal() {
       </div >
 
       {/* ═══════════════════════════════════════════════════════════════
-          PERFORMANCE GRID (TU ROL / CÓMO FUNCIONA)
+          SOCIAL PROOF
           ═══════════════════════════════════════════════════════════════ */}
-      <PerformanceGrid />
+      <SocialProof />
 
       {/* ═══════════════════════════════════════════════════════════════
-          USER JOURNEY (TU ROL)
+          PRICING CONTEXT
           ═══════════════════════════════════════════════════════════════ */}
-      <UserJourney />
+      <PricingContext onCtaClick={() => setActiveIntegration('cal')} />
 
       {/* ═══════════════════════════════════════════════════════════════
           CTA / CONTACT SECTION
           ═══════════════════════════════════════════════════════════════ */}
-      <div className="vite-section vite-frame relative overflow-hidden" style={{ background: TOKENS.bgPrimary }}>
+      <div id="contacto" className="vite-section vite-frame relative overflow-hidden" style={{ background: TOKENS.bgPrimary }}>
         {/* Ambient Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-vite/5 pointer-events-none" />
 
