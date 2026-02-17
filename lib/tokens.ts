@@ -457,6 +457,48 @@ export const CONTACT_SECTION = {
   },
 };
 
+export interface LeadCaptureCopy {
+  inlineTag: string;
+  inlineTitle: string;
+  inlineBody: string;
+  inlineCta: string;
+  inlineSub: string;
+  modalTitle: string;
+  modalBody: string;
+  modalCta: string;
+  stickyCta: string;
+  successTitle: string;
+  successBody: string;
+  fields: {
+    emailLabel: string;
+    emailPlaceholder: string;
+    whatsappLabel: string;
+    whatsappPlaceholder: string;
+  };
+  legal: string;
+}
+
+export const LEAD_CAPTURE: LeadCaptureCopy = {
+  inlineTag: "PLAN BASE GRATIS",
+  inlineTitle: "¿Aún no quieres agendar? Te mandamos un plan inicial por correo.",
+  inlineBody: "Recibe una versión base de protocolo para empezar hoy y evaluar si NGX es para ti.",
+  inlineCta: "RECIBIR PLAN POR EMAIL",
+  inlineSub: "Entrega inmediata · sin costo",
+  modalTitle: "Antes de irte, llévate tu plan base.",
+  modalBody: "Te enviamos un esquema inicial de entrenamiento, nutrición y recuperación para que empieces esta semana.",
+  modalCta: "ENVIAR A MI CORREO",
+  stickyCta: "RECIBIR PLAN",
+  successTitle: "Listo. Tu plan base va en camino.",
+  successBody: "Revisa tu correo en los próximos minutos. Si quieres acelerar resultados, agenda evaluación.",
+  fields: {
+    emailLabel: "Correo electrónico",
+    emailPlaceholder: "tu@email.com",
+    whatsappLabel: "WhatsApp (opcional)",
+    whatsappPlaceholder: "+52 81 0000 0000",
+  },
+  legal: "Al enviar tus datos aceptas ser contactado por NGX para seguimiento de tu protocolo.",
+};
+
 // ═══════════════════════════════════════════════════════════════
 // NEW SECTIONS: FOR WHOM, HOW IT WORKS, SOCIAL PROOF, PRICING
 // ═══════════════════════════════════════════════════════════════

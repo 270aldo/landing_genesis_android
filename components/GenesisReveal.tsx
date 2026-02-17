@@ -9,6 +9,7 @@ import HowItWorks from "./HowItWorks";
 import SocialProof from "./SocialProof";
 import PricingContext from "./PricingContext";
 import NarrativeVisualLayer from "./NarrativeVisualLayer";
+import LeadCaptureExperience from "./LeadCaptureExperience";
 import {
   TOKENS,
   POST_SCROLL_THEME,
@@ -975,6 +976,11 @@ export default function GenesisReveal() {
           SOCIAL PROOF
           ═══════════════════════════════════════════════════════════════ */}
       <SocialProof />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          LEAD CAPTURE
+          ═══════════════════════════════════════════════════════════════ */}
+      <LeadCaptureExperience />
 
       {/* ═══════════════════════════════════════════════════════════════
           PRICING CONTEXT
