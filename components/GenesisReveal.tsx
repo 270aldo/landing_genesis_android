@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
 import NextImage from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare, TrendingUp } from "lucide-react";
+import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
 import ForWhom from "./ForWhom";
 import HowItWorks from "./HowItWorks";
 import SocialProof from "./SocialProof";
@@ -26,6 +26,7 @@ import {
   VISUAL_ASSETS,
   SECTION_VISUALS,
   getFramePath,
+  FOOTER_LINKS,
   type CapabilityIconId,
   type NarrativeSection,
   type CapabilityItem,
@@ -36,11 +37,17 @@ import GenesisAudio from "./GenesisAudio";
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-function getSectionOpacity(progress: number, section: NarrativeSection): number {
+function getSectionOpacity(
+  progress: number,
+  section: NarrativeSection,
+  compactLayout = false
+): number {
   const { scrollStart, scrollEnd } = section;
   const range = scrollEnd - scrollStart;
-  const fadeInEnd = scrollStart + range * 0.25;
-  const fadeOutStart = scrollStart + range * 0.80;
+  const fadeInRatio = compactLayout ? 0.18 : 0.25;
+  const fadeOutRatio = compactLayout ? 0.72 : 0.80;
+  const fadeInEnd = scrollStart + range * fadeInRatio;
+  const fadeOutStart = scrollStart + range * fadeOutRatio;
 
   if (progress < scrollStart || progress > scrollEnd) return 0;
   if (progress < fadeInEnd) return (progress - scrollStart) / (fadeInEnd - scrollStart);
@@ -251,12 +258,14 @@ function AnimatedStat({
   label,
   active,
   delay,
+  highContrast,
 }: {
   value: number;
   unit: string;
   label: string;
   active: boolean;
   delay: number;
+  highContrast: boolean;
 }) {
   const [count, setCount] = useState(0);
   const hasStarted = useRef(false);
@@ -289,7 +298,7 @@ function AnimatedStat({
         {count}
         {unit}
       </div>
-      <div className="text-[13px] text-white/60 mt-1">{label}</div>
+      <div className={`text-[13px] mt-1 ${highContrast ? "text-white/78" : "text-white/60"}`}>{label}</div>
     </div>
   );
 }
@@ -310,12 +319,26 @@ export default function GenesisReveal() {
   const [selectedCapability, setSelectedCapability] = useState<CapabilityItem | null>(null);
   const [activeIntegration, setActiveIntegration] = useState<'none' | 'cal' | 'agent'>('none');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Track scroll position for navbar styling
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+      setShowScrollTop(window.scrollY > window.innerHeight * 12);
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const syncLayoutMode = () => {
+      setIsCompactLayout(window.innerWidth < 1024);
+    };
+    syncLayoutMode();
+    window.addEventListener("resize", syncLayoutMode);
+    return () => window.removeEventListener("resize", syncLayoutMode);
   }, []);
 
   const CAL_LINK = process.env.NEXT_PUBLIC_CAL_LINK ?? "https://cal.com/aldoolivas";
@@ -436,8 +459,8 @@ export default function GenesisReveal() {
   // --- Section opacities ---
   const sectionOpacities = useMemo(() => {
     const activeProgress = scrollReady ? scrollProgress : 0;
-    return SECTIONS.map((section) => getSectionOpacity(activeProgress, section));
-  }, [scrollProgress, scrollReady]);
+    return SECTIONS.map((section) => getSectionOpacity(activeProgress, section, isCompactLayout));
+  }, [scrollProgress, scrollReady, isCompactLayout]);
 
   // Derive active section for Audio Engine
   const activeSectionId = useMemo(() => {
@@ -564,6 +587,26 @@ export default function GenesisReveal() {
             {padFrame(scrollReady ? currentFrame : 0)} / {padFrame(TOTAL_FRAMES - 1)}
           </div>
 
+          {/* Canvas scroll progress bar */}
+          {scrollProgress > 0 && (
+            <div
+              className="absolute right-0 top-0 w-[2px] z-20 pointer-events-none"
+              style={{
+                height: `${scrollProgress * 100}%`,
+                background: "linear-gradient(to bottom, #6c3bff, #b39aff)",
+              }}
+            />
+          )}
+
+          {/* Scroll-to-begin hint */}
+          <div
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center gap-1"
+            style={{ opacity: Math.max(0, 1 - scrollProgress * 20) }}
+          >
+            <span className="vite-label text-white/40">SCROLL</span>
+            <ChevronDown className="w-4 h-4 text-white/40 animate-bounce" />
+          </div>
+
           {/* ═══════════════════════════════════════════════════════
               NARRATIVE SECTIONS
               ═══════════════════════════════════════════════════════ */}
@@ -595,10 +638,9 @@ export default function GenesisReveal() {
                     : { opacity: 0, scale: 2, filter: "blur(10px)" }
                 }
                 transition={{
-                  type: "spring",
-                  damping: 12,
-                  stiffness: 120,
-                  mass: 1.5,
+                  opacity: { duration: 0.28, ease: "easeOut" },
+                  scale: { type: "spring", damping: 12, stiffness: 120, mass: 1.5 },
+                  filter: { duration: 0.28, ease: "easeOut" },
                 }}
                 style={{
                   color: "#6D00FF",
@@ -635,7 +677,7 @@ export default function GenesisReveal() {
             className="absolute inset-0 flex items-start md:items-center justify-center md:justify-end pointer-events-none z-10 px-4 pt-[15vh] md:pt-0"
             style={{ opacity: sectionOpacities[2], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="liquid-card rounded-2xl w-full max-w-[95%] md:mr-[5%] md:max-w-[42%] p-6 md:p-8 relative overflow-hidden">
+            <div className="liquid-card section-science-card rounded-2xl w-full max-w-[95%] md:mr-[5%] md:max-w-[42%] p-6 md:p-8 relative overflow-hidden">
               <div className={`relative rounded-xl border border-vite/25 overflow-hidden mb-6 ${SECTION_VISUALS.science.mobileEnabled ? "block" : "hidden md:block"}`}>
                 <div className="relative min-h-[170px]">
                   <NarrativeVisualLayer
@@ -666,10 +708,11 @@ export default function GenesisReveal() {
                     label={stat.label}
                     active={sectionOpacities[2] > 0.1}
                     delay={i * 150}
+                    highContrast={isCompactLayout}
                   />
                 ))}
               </div>
-              <p className="font-mono text-[10px] text-white/20 mt-6 text-center md:text-left relative z-10">
+              <p className={`font-mono text-[10px] mt-6 text-center md:text-left relative z-10 ${isCompactLayout ? "text-white/38" : "text-white/20"}`}>
                 {COPY.science.source}
               </p>
             </div>
@@ -691,7 +734,7 @@ export default function GenesisReveal() {
                 {COPY.pillars.items.map((item, i) => (
                   <motion.div
                     key={i}
-                    className="liquid-card flex items-start gap-3 rounded-xl p-3 relative overflow-hidden"
+                    className="liquid-card section-pillar-item flex items-start gap-3 rounded-xl p-3 relative overflow-hidden"
                     initial={{ opacity: 0, x: -30 }}
                     animate={
                       sectionOpacities[3] > 0.3
@@ -715,7 +758,7 @@ export default function GenesisReveal() {
                       <p className="font-mono text-xs md:text-[13px] font-bold text-white">
                         {item.title}
                       </p>
-                      <p className="text-[11px] md:text-[12px] text-white/60 mt-0.5">{item.desc}</p>
+                      <p className={`text-[11px] md:text-[12px] mt-0.5 ${isCompactLayout ? "text-white/80" : "text-white/60"}`}>{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -803,6 +846,12 @@ export default function GenesisReveal() {
 
             <p className="text-[10px] md:text-[11px] text-white/30 mt-3">{COPY.cta.sub}</p>
           </div>
+
+          {/* Canvas → Post-scroll transition gradient */}
+          <div
+            className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-10"
+            style={{ background: "linear-gradient(to bottom, transparent, #010101)" }}
+          />
         </div>
       </div>
 
@@ -852,19 +901,13 @@ export default function GenesisReveal() {
             Cada área de tu salud tiene su propio módulo de análisis. Nada genérico.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-5 mt-10 md:mt-12">
+          <div className="flex flex-wrap justify-center gap-4 md:gap-5 mt-10 md:mt-12">
             {CAPABILITIES.map((capability, index) => {
-              // 2-3-2 Layout Pattern for 7 items
-              // Row 1 (2 items): Span 3
-              // Row 2 (3 items): Span 2
-              // Row 3 (2 items): Span 3
-              const spanClass = [0, 1, 5, 6].includes(index) ? "lg:col-span-3" : "lg:col-span-2";
-
               return (
                 <article
                   key={capability.tag}
                   onClick={() => setSelectedCapability(capability)}
-                  className={`capability-card liquid-card group relative overflow-hidden ${spanClass} cursor-pointer`}
+                  className="capability-card liquid-card group relative overflow-hidden w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] cursor-pointer"
                 >
                   {/* Background Texture - Cyclical Assignment */}
                   <div
@@ -1266,16 +1309,43 @@ export default function GenesisReveal() {
         }
       </AnimatePresence >
 
+      {/* Scroll-to-top button */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-20 right-4 z-50 icon-chip"
+          aria-label="Volver al inicio"
+        >
+          <ChevronUp className="w-4 h-4 text-white/60" />
+        </button>
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════
           FOOTER
           ═══════════════════════════════════════════════════════════════ */}
       <div className="vite-section vite-frame" style={{ background: TOKENS.bg }}>
-        <div className="max-w-content mx-auto px-6 md:px-10 py-12 flex items-center justify-between">
-          <p className="font-mono text-sm">
-            <span className="text-white">NGX</span>{" "}
-            <span className="text-vite">GENESIS</span>
-          </p>
-          <p className="font-mono text-xs text-grey">
+        <div className="max-w-content mx-auto px-6 md:px-10 py-12">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+            <p className="font-mono text-sm">
+              <span className="text-white">NGX</span>{" "}
+              <span className="text-vite">GENESIS</span>
+            </p>
+            <div className="flex items-center gap-6 flex-wrap justify-center">
+              <a href={FOOTER_LINKS.instagram.href} target="_blank" rel="noopener noreferrer" className="vite-label text-white/40 hover:text-white/80 transition-colors">
+                {FOOTER_LINKS.instagram.label}
+              </a>
+              <a href={FOOTER_LINKS.email.href} className="vite-label text-white/40 hover:text-white/80 transition-colors">
+                {FOOTER_LINKS.email.label}
+              </a>
+              <a href={FOOTER_LINKS.whatsapp.href} target="_blank" rel="noopener noreferrer" className="vite-label text-white/40 hover:text-white/80 transition-colors">
+                {FOOTER_LINKS.whatsapp.label}
+              </a>
+              <a href={FOOTER_LINKS.privacy.href} className="vite-label text-white/40 hover:text-white/80 transition-colors">
+                {FOOTER_LINKS.privacy.label}
+              </a>
+            </div>
+          </div>
+          <p className="font-mono text-xs text-grey text-center md:text-right">
             &copy; 2026 NGX Inc. Performance &amp; Longevity.
           </p>
         </div>

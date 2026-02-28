@@ -27,7 +27,7 @@ html {
 body {
   background: var(--genesis-bg);
   color: #ffffff;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-inter), sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -168,6 +168,11 @@ body {
 
 .liquid-card:hover::after {
   transform: translateX(55%);
+}
+
+.section-science-card::before,
+.section-pillar-item::before {
+  border-color: rgba(179, 154, 255, 0.14);
 }
 
 /* Vite glow button */
@@ -348,7 +353,7 @@ body {
 /* Lead Capture */
 .lead-label {
   display: block;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-jetbrains-mono), monospace;
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -399,7 +404,7 @@ body {
   padding: 10px 14px;
   background: rgba(16, 16, 22, 0.92);
   color: #fff;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-jetbrains-mono), monospace;
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -426,9 +431,19 @@ body {
   }
 }
 
+/* Audio toggle first-load ring pulse */
+@keyframes ring-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(108, 59, 255, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(108, 59, 255, 0); }
+}
+
+.ring-pulse {
+  animation: ring-pulse 1s ease-in-out 3;
+}
+
 /* Typography — Vite dense headings */
 .vite-h1 {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-jetbrains-mono), monospace;
   font-weight: 700;
   line-height: 1.12;
   letter-spacing: -1.5px;
@@ -441,7 +456,7 @@ body {
 }
 
 .vite-h2 {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-jetbrains-mono), monospace;
   font-weight: 700;
   line-height: 1.0;
   letter-spacing: -0.8px;
@@ -454,7 +469,7 @@ body {
 }
 
 .vite-label {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-jetbrains-mono), monospace;
   font-size: 11px;
   font-weight: 400;
   letter-spacing: 0.3em;
@@ -469,7 +484,7 @@ body {
 
 /* Stat number */
 .stat-number {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-jetbrains-mono), monospace;
   font-weight: 700;
   letter-spacing: -1px;
   line-height: 1.1;
@@ -493,7 +508,7 @@ body {
 }
 
 .capability-tag {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-jetbrains-mono), monospace;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.22em;
@@ -564,6 +579,22 @@ body {
 
   .lead-modal-card {
     padding: 18px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .section-science-card {
+    background: rgba(12, 12, 18, 0.74);
+    border-color: rgba(109, 0, 255, 0.5);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      0 12px 30px rgba(0, 0, 0, 0.45),
+      0 0 20px rgba(109, 0, 255, 0.22);
+  }
+
+  .section-pillar-item {
+    background: rgba(12, 12, 18, 0.78);
+    border-color: rgba(109, 0, 255, 0.5);
   }
 }
 

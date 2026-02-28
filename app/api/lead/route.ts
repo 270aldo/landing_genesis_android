@@ -8,6 +8,7 @@ interface LeadPayload {
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const WEBHOOK_TIMEOUT_MS = 8_000;
 
 function sanitizeText(value: unknown, max = 200): string {
   if (typeof value !== "string") return "";
@@ -51,30 +52,57 @@ export async function POST(request: Request) {
     };
 
     const webhookUrl = process.env.LEAD_WEBHOOK_URL;
-    if (webhookUrl) {
-      const webhookResponse = await fetch(webhookUrl, {
+    if (!webhookUrl) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Integración de leads no disponible. Configura LEAD_WEBHOOK_URL.",
+        },
+        { status: 503 }
+      );
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
+
+    let webhookResponse: Response;
+    try {
+      webhookResponse = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(leadEvent),
         cache: "no-store",
+        signal: controller.signal,
       });
-
-      if (!webhookResponse.ok) {
-        return NextResponse.json(
-          { ok: false, message: "No pudimos enrutar tu lead. Intenta nuevamente." },
-          { status: 502 }
-        );
-      }
+    } catch (error) {
+      const timedOut = error instanceof Error && error.name === "AbortError";
+      return NextResponse.json(
+        {
+          ok: false,
+          message: timedOut
+            ? "Tiempo agotado al enviar tu lead. Intenta nuevamente."
+            : "No pudimos enrutar tu lead. Intenta nuevamente.",
+        },
+        { status: timedOut ? 504 : 502 }
+      );
+    } finally {
+      clearTimeout(timeoutId);
     }
 
-    // Fallback logging for environments without webhook integration.
+    if (!webhookResponse.ok) {
+      return NextResponse.json(
+        { ok: false, message: "No pudimos enrutar tu lead. Intenta nuevamente." },
+        { status: 502 }
+      );
+    }
+
     console.info(
-      `[lead-capture] email=${maskEmail(email)} source=${source} page=${page} webhook=${webhookUrl ? "on" : "off"}`
+      `[lead-capture] email=${maskEmail(email)} source=${source} page=${page} webhook=on`
     );
 
     return NextResponse.json({
       ok: true,
-      routed: Boolean(webhookUrl),
+      routed: true,
     });
   } catch (error) {
     return NextResponse.json(

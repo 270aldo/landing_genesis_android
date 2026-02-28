@@ -40,13 +40,20 @@ export default function SocialProof() {
               <p className="text-white/80 text-sm md:text-base leading-relaxed italic flex-grow">
                 &ldquo;{testimonial.quote}&rdquo;
               </p>
-              <div className="mt-6 pt-4 border-t border-white/10">
-                <p className="font-mono text-white text-sm">
-                  {testimonial.name}, {testimonial.age} años
-                </p>
-                <p className="font-mono text-white/40 text-xs">
-                  {testimonial.city}
-                </p>
+              <div className="mt-6 pt-4 border-t border-white/10 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-violet-900/30 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
+                  <span className="vite-label text-[#b39aff]">
+                    {testimonial.name.charAt(0)}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-mono text-white text-sm">
+                    {testimonial.name}, {testimonial.age} años
+                  </p>
+                  <p className="font-mono text-white/40 text-xs">
+                    {testimonial.city}
+                  </p>
+                </div>
               </div>
             </motion.div>
           ))}

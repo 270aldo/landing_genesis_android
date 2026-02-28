@@ -176,6 +176,9 @@ export default function LeadCaptureExperience() {
       >
         <div className="absolute inset-0 bg-gradient-to-br from-vite/10 via-transparent to-vite/5 pointer-events-none" />
         <div className="max-w-content mx-auto px-6 md:px-10 py-20 md:py-24 relative z-10">
+          <p className="vite-label text-white/40 text-center mb-6">
+            ¿Aún no estás listo para agendar?
+          </p>
           <div className="liquid-card rounded-2xl p-6 md:p-10 max-w-4xl mx-auto">
             <p className="vite-label text-white/45 mb-4">{LEAD_CAPTURE.inlineTag}</p>
             <h3 className="vite-h2 text-white mb-4" style={{ fontSize: "clamp(22px, 3vw, 34px)" }}>

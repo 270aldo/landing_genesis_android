@@ -525,25 +525,25 @@ export const FOR_WHOM_SECTION: ForWhomSection = {
     {
       title: "El Profesional que Perdió Prioridad",
       age: "35-50",
-      desc: "Tienes éxito profesional pero tu cuerpo quedó en segundo plano. Quieres resultados, pero tu agenda no perdona.",
+      desc: "Tu carrera avanza. Tu cuerpo no. Ya no aceptas que el éxito en una cosa signifique descuido en otra. Buscas un sistema que funcione con tu ritmo de vida, no contra él.",
       icon: "Briefcase",
     },
     {
       title: "El que Ya Entrena pero No Avanza",
       age: "30-45",
-      desc: "Llevas años en el gym pero tu físico no cambia. Levantas lo mismo. Te falta estructura real.",
+      desc: "Llevas meses esforzándote. El problema no es disciplina — es que nadie te ha dado el sistema correcto. El esfuerzo ya está. Solo falta la dirección.",
       icon: "Dumbbell",
     },
     {
       title: "El Preventivo Inteligente",
       age: "45-60",
-      desc: "Tu doctor te habló de glucosa, colesterol o presión. Sabes que necesitas actuar, pero no quieres extremos.",
+      desc: "Los marcadores empezaron a moverse. No hacia donde quieres. Esto no es una alarma — es una oportunidad de intervenir ahora, con datos, antes de que se convierta en diagnóstico.",
       icon: "HeartPulse",
     },
     {
       title: "El que Quiere Envejecer Bien",
       age: "40-60",
-      desc: "No te importa tener six-pack. Te importa subir escaleras a los 70 sin dolor.",
+      desc: "No quieres más años. Quieres que los años que vienen valgan la pena — con energía, función y autonomía hasta el final. Eso no pasa solo.",
       icon: "Timer",
     },
   ],
@@ -654,6 +654,7 @@ export interface PricingSection {
   body: string;
   comparison: PricingComparison;
   cta: string;
+  startingAt: string;
 }
 
 export const PRICING_SECTION: PricingSection = {
@@ -681,4 +682,17 @@ export const PRICING_SECTION: PricingSection = {
     },
   },
   cta: "AGENDA TU EVALUACIÓN GRATUITA",
+  startingAt: "desde $5,000 MXN/mes",
 };
+
+// ═══════════════════════════════════════════════════════════════
+// FOOTER LINKS
+// Update these values with your real handles / URLs
+// ═══════════════════════════════════════════════════════════════
+
+export const FOOTER_LINKS = {
+  instagram: { href: "https://instagram.com/ngxgenesis", label: "@ngxgenesis" },
+  email:     { href: "mailto:hola@ngx.mx",               label: "hola@ngx.mx" },
+  whatsapp:  { href: "https://wa.me/528100000000",        label: "WhatsApp" },
+  privacy:   { href: "/privacidad",                       label: "Privacidad" },
+} as const;

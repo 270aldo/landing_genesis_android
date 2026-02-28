@@ -83,8 +83,14 @@ export default function PricingContext({ onCtaClick }: PricingContextProps) {
           </motion.div>
         </div>
 
+        {/* Starting-at price */}
+        <p className="text-center mt-10 mb-2">
+          <span className="vite-label text-white/40">Inversión: </span>
+          <span className="vite-label text-vite">{PRICING_SECTION.startingAt}</span>
+        </p>
+
         {/* CTA */}
-        <div className="text-center mt-12">
+        <div className="text-center mt-6">
           <button
             onClick={onCtaClick}
             className="btn-glow font-mono font-bold text-xs md:text-sm text-white px-8 py-3 rounded-full tracking-widest transition-all hover:scale-105 active:scale-95"

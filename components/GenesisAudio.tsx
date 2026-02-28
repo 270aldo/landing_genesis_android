@@ -12,11 +12,21 @@ interface GenesisAudioProps {
 export default function GenesisAudio({ active, currentSection }: GenesisAudioProps) {
     const [muted, setMuted] = useState(true);
     const [userInteracted, setUserInteracted] = useState(false);
+    const [pulsing, setPulsing] = useState(false);
 
     // Refs for audio elements - defined as distinct HTMLAudioElements to mix tracks
     const ambienceRef = useRef<HTMLAudioElement | null>(null);
     // Using a map to manage narrative tracks might be better, but single ref is simpler for linear scroll
     const narrativeRef = useRef<HTMLAudioElement | null>(null);
+
+    // First-load pulse: draw attention to the sound toggle once
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (window.localStorage.getItem("ngx_audio_interacted") === "1") return;
+        setPulsing(true);
+        const timer = window.setTimeout(() => setPulsing(false), 3000);
+        return () => window.clearTimeout(timer);
+    }, []);
 
     // Initialize Audio Objects
     useEffect(() => {
@@ -47,8 +57,13 @@ export default function GenesisAudio({ active, currentSection }: GenesisAudioPro
 
     // MASTER TOGGLE: Mute/Unmute Logic
     const toggleMute = () => {
-        // If first interaction, mark it so browsers allow auto-play
-        if (!userInteracted) setUserInteracted(true);
+        if (!userInteracted) {
+            setUserInteracted(true);
+            if (typeof window !== "undefined") {
+                window.localStorage.setItem("ngx_audio_interacted", "1");
+            }
+        }
+        setPulsing(false);
         setMuted(!muted);
     };
 
@@ -152,7 +167,7 @@ export default function GenesisAudio({ active, currentSection }: GenesisAudioPro
         <div className="fixed bottom-6 left-6 z-50 mix-blend-difference">
             <button
                 onClick={toggleMute}
-                className="group flex items-center gap-3 px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-all cursor-pointer"
+                className={`group flex items-center gap-3 px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-all cursor-pointer${pulsing ? " ring-pulse" : ""}`}
             >
                 <div className="relative w-4 h-4 flex items-center justify-center">
                     {muted ? (
