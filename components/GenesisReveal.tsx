@@ -1,9 +1,15 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
-import { useScroll, motion, useMotionValueEvent, AnimatePresence } from "framer-motion";
-import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare } from "lucide-react";
-import PerformanceGrid from "./PerformanceGrid";
+import NextImage from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { Dumbbell, Beef, Moon, Activity, Cpu, Brain, Accessibility, X, Calendar, MessageSquare, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
+import ForWhom from "./ForWhom";
+import HowItWorks from "./HowItWorks";
+import SocialProof from "./SocialProof";
+import PricingContext from "./PricingContext";
+import NarrativeVisualLayer from "./NarrativeVisualLayer";
+import LeadCaptureExperience from "./LeadCaptureExperience";
 import {
   TOKENS,
   POST_SCROLL_THEME,
@@ -17,7 +23,10 @@ import {
   SYSTEM_SECTION_COPY,
   DUO_COPY,
   CONTACT_SECTION,
+  VISUAL_ASSETS,
+  SECTION_VISUALS,
   getFramePath,
+  FOOTER_LINKS,
   type CapabilityIconId,
   type NarrativeSection,
   type CapabilityItem,
@@ -28,11 +37,17 @@ import GenesisAudio from "./GenesisAudio";
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-function getSectionOpacity(progress: number, section: NarrativeSection): number {
+function getSectionOpacity(
+  progress: number,
+  section: NarrativeSection,
+  compactLayout = false
+): number {
   const { scrollStart, scrollEnd } = section;
   const range = scrollEnd - scrollStart;
-  const fadeInEnd = scrollStart + range * 0.25;
-  const fadeOutStart = scrollStart + range * 0.80;
+  const fadeInRatio = compactLayout ? 0.18 : 0.25;
+  const fadeOutRatio = compactLayout ? 0.72 : 0.80;
+  const fadeInEnd = scrollStart + range * fadeInRatio;
+  const fadeOutStart = scrollStart + range * fadeOutRatio;
 
   if (progress < scrollStart || progress > scrollEnd) return 0;
   if (progress < fadeInEnd) return (progress - scrollStart) / (fadeInEnd - scrollStart);
@@ -79,7 +94,7 @@ function buildAmbientStyle(
 }
 
 function getCapabilityIcon(iconId: CapabilityIconId): JSX.Element {
-  const props = { size: 24, strokeWidth: 1.5, className: "text-white/90" };
+  const props = { size: 24, strokeWidth: 1.5, style: { color: "#6D00FF" } };
   switch (iconId) {
     case "Dumbbell": return <Dumbbell {...props} />;
     case "Beef": return <Beef {...props} />;
@@ -92,7 +107,18 @@ function getCapabilityIcon(iconId: CapabilityIconId): JSX.Element {
   }
 }
 
-const FINAL_FRAME_HOLD_START = 0.92;
+function getPillarIcon(iconId: string): JSX.Element {
+  const props = { size: 20, strokeWidth: 1.5, style: { color: "#6D00FF" } };
+  switch (iconId) {
+    case "Dumbbell": return <Dumbbell {...props} />;
+    case "Beef": return <Beef {...props} />;
+    case "Moon": return <Moon {...props} />;
+    case "TrendingUp": return <TrendingUp {...props} />;
+    default: return <Activity {...props} />;
+  }
+}
+
+const FINAL_FRAME_HOLD_START = 0.98;
 
 function progressToFrame(progress: number): number {
   const clamped = Math.min(Math.max(progress, 0), 1);
@@ -232,46 +258,47 @@ function AnimatedStat({
   label,
   active,
   delay,
+  highContrast,
 }: {
   value: number;
   unit: string;
   label: string;
   active: boolean;
   delay: number;
+  highContrast: boolean;
 }) {
   const [count, setCount] = useState(0);
-  const [hasRun, setHasRun] = useState(false);
+  const hasStarted = useRef(false);
 
   useEffect(() => {
-    if ((!active && !hasRun) || hasRun) return;
-
-    // Once active, we mark as running and don't stop even if active becomes false (scrolling past)
-    setHasRun(true);
+    if (!active || hasStarted.current) return;
+    hasStarted.current = true;
 
     const timer = setTimeout(() => {
       const duration = 1200;
       const startTime = performance.now();
+      let rafId: number;
       function tick(now: number) {
         const elapsed = now - startTime;
         const t = Math.min(elapsed / duration, 1);
         const eased = 1 - Math.pow(1 - t, 3);
         setCount(Math.round(eased * value));
-        if (t < 1) requestAnimationFrame(tick);
+        if (t < 1) rafId = requestAnimationFrame(tick);
       }
-      requestAnimationFrame(tick);
+      rafId = requestAnimationFrame(tick);
+      // No cleanup for RAF — animation must finish once started
     }, delay);
-    return () => clearTimeout(timer);
-  }, [active, hasRun, value, delay]);
-
-  // Removed the reset logic so stats stick once viewed
+    // Don't clear timeout — once triggered, let it complete
+    return undefined;
+  }, [active, value, delay]);
 
   return (
     <div>
-      <div className="stat-number" style={{ fontSize: "clamp(36px, 5vw, 48px)" }}>
+      <div className="stat-number" style={{ fontSize: "clamp(36px, 5vw, 48px)", color: "#6D00FF" }}>
         {count}
         {unit}
       </div>
-      <div className="text-[13px] text-white/60 mt-1">{label}</div>
+      <div className={`text-[13px] mt-1 ${highContrast ? "text-white/78" : "text-white/60"}`}>{label}</div>
     </div>
   );
 }
@@ -291,10 +318,31 @@ export default function GenesisReveal() {
   const [scrollReady, setScrollReady] = useState(false);
   const [selectedCapability, setSelectedCapability] = useState<CapabilityItem | null>(null);
   const [activeIntegration, setActiveIntegration] = useState<'none' | 'cal' | 'agent'>('none');
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Placeholder Config - USER TO REPLACE
-  const CAL_LINK = "https://cal.com/aldoolivas";
-  const AGENT_ID = "replace-with-your-elevenlabs-agent-id";
+  // Track scroll position for navbar styling
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+      setShowScrollTop(window.scrollY > window.innerHeight * 12);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const syncLayoutMode = () => {
+      setIsCompactLayout(window.innerWidth < 1024);
+    };
+    syncLayoutMode();
+    window.addEventListener("resize", syncLayoutMode);
+    return () => window.removeEventListener("resize", syncLayoutMode);
+  }, []);
+
+  const CAL_LINK = process.env.NEXT_PUBLIC_CAL_LINK ?? "https://cal.com/aldoolivas";
+  const AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID ?? "";
 
   // --- Refs ---
   const containerRef = useRef<HTMLDivElement>(null);
@@ -303,21 +351,18 @@ export default function GenesisReveal() {
   const rafRef = useRef<number>(0);
 
   // --- Scroll tracking ---
-  const { scrollYProgress } = useScroll({ target: containerRef });
-
-  // Force a deterministic top-start before enabling scroll-driven frame updates.
+  // Manual progress calculation scoped to the container element.
+  // Framer Motion's useScroll({ target }) maps progress to the entire page,
+  // which prevents later sections (vehicle, cta) from ever being reached.
   useEffect(() => {
     const previous = window.history.scrollRestoration;
     window.history.scrollRestoration = "manual";
     const resetScroll = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
-    let raf1 = 0;
-    let raf2 = 0;
-
     resetScroll();
-    raf1 = requestAnimationFrame(() => {
+    const raf1 = requestAnimationFrame(() => {
       resetScroll();
-      raf2 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         setScrollProgress(0);
         setCurrentFrame(0);
         setScrollReady(true);
@@ -326,17 +371,39 @@ export default function GenesisReveal() {
 
     return () => {
       cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
       window.history.scrollRestoration = previous;
     };
   }, []);
 
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
+  useEffect(() => {
     if (!scrollReady) return;
-    setScrollProgress(v);
-    const frameIndex = progressToFrame(v);
-    setCurrentFrame(Math.max(0, frameIndex));
-  });
+    let ticking = false;
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const el = containerRef.current;
+        if (!el) { ticking = false; return; }
+        const rect = el.getBoundingClientRect();
+        const containerH = el.offsetHeight;
+        const viewportH = window.innerHeight;
+        const scrollRange = containerH - viewportH;
+        if (scrollRange <= 0) { ticking = false; return; }
+        // progress 0 → container top at viewport top
+        // progress 1 → container bottom at viewport bottom
+        const raw = -rect.top / scrollRange;
+        const progress = Math.min(1, Math.max(0, raw));
+        setScrollProgress(progress);
+        setCurrentFrame(Math.max(0, progressToFrame(progress)));
+        ticking = false;
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll(); // initial sync
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [scrollReady]);
 
   // --- Preload images ---
   useEffect(() => {
@@ -392,7 +459,18 @@ export default function GenesisReveal() {
   // --- Section opacities ---
   const sectionOpacities = useMemo(() => {
     const activeProgress = scrollReady ? scrollProgress : 0;
-    return SECTIONS.map((section) => getSectionOpacity(activeProgress, section));
+    return SECTIONS.map((section) => getSectionOpacity(activeProgress, section, isCompactLayout));
+  }, [scrollProgress, scrollReady, isCompactLayout]);
+
+  // Derive active section for Audio Engine
+  const activeSectionId = useMemo(() => {
+    const activeProgress = scrollReady ? scrollProgress : 0;
+    // Find the section that has the highest opacity or is "current"
+    // Using a simpler logic: if progress is within section start/end with some buffer
+    const current = SECTIONS.find(s =>
+      activeProgress >= s.scrollStart && activeProgress <= s.scrollEnd
+    );
+    return current ? current.id : null;
   }, [scrollProgress, scrollReady]);
 
   const scrollToSystem = useCallback(() => {
@@ -417,11 +495,7 @@ export default function GenesisReveal() {
     []
   );
 
-  const textures = [
-    "/assets/abstract_tech_texture_1.png",
-    "/assets/abstract_tech_texture_2.png",
-    "/assets/abstract_tech_texture_3.png",
-  ];
+  const textures = VISUAL_ASSETS.textures;
 
   // ═══════════════════════════════════════════════════════════════
   // LOADING SCREEN
@@ -455,7 +529,31 @@ export default function GenesisReveal() {
   // ═══════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen text-white" style={{ background: TOKENS.bg }}>
-      <GenesisAudio active={loaded} />
+      <GenesisAudio active={loaded} currentSection={activeSectionId} />
+
+      {/* ── NAVBAR ── */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${isScrolled
+          ? 'bg-black/80 backdrop-blur-md border-white/10 py-4'
+          : 'bg-transparent border-transparent py-6'
+          }`}
+      >
+        <div className="max-w-content mx-auto px-6 md:px-10 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-vite rounded-full animate-pulse" />
+            <span className="font-mono font-bold text-lg tracking-tighter text-white">
+              NGX <span className="text-vite">GENESIS</span>
+            </span>
+          </div>
+          <button
+            onClick={() => document.getElementById(CTA_TARGET_ID)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="btn-glow font-mono font-bold text-[10px] md:text-xs text-white px-5 py-2 rounded-full tracking-widest transition-all hover:scale-105 active:scale-95"
+          >
+            INICIAR_PROTOCOLO
+          </button>
+        </div>
+      </nav>
+
       {/* ── SCROLL CONTAINER ── */}
       <div ref={containerRef} style={{ height: `${SCROLL_HEIGHT_VH}vh` }} className="relative">
         {/* ── STICKY VIEWPORT ── */}
@@ -489,6 +587,26 @@ export default function GenesisReveal() {
             {padFrame(scrollReady ? currentFrame : 0)} / {padFrame(TOTAL_FRAMES - 1)}
           </div>
 
+          {/* Canvas scroll progress bar */}
+          {scrollProgress > 0 && (
+            <div
+              className="absolute right-0 top-0 w-[2px] z-20 pointer-events-none"
+              style={{
+                height: `${scrollProgress * 100}%`,
+                background: "linear-gradient(to bottom, #6c3bff, #b39aff)",
+              }}
+            />
+          )}
+
+          {/* Scroll-to-begin hint */}
+          <div
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center gap-1"
+            style={{ opacity: Math.max(0, 1 - scrollProgress * 20) }}
+          >
+            <span className="vite-label text-white/40">SCROLL</span>
+            <ChevronDown className="w-4 h-4 text-white/40 animate-bounce" />
+          </div>
+
           {/* ═══════════════════════════════════════════════════════
               NARRATIVE SECTIONS
               ═══════════════════════════════════════════════════════ */}
@@ -512,10 +630,23 @@ export default function GenesisReveal() {
                 {COPY.hook.body}
               </p>
               <motion.p
-                className="font-mono text-vite text-base md:text-xl font-semibold"
-                initial={{ opacity: 0, y: 10 }}
-                animate={sectionOpacities[0] > 0.5 ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-                transition={{ delay: 0.8, duration: 0.6 }}
+                className="font-mono text-[8vw] md:text-[6vw] font-black tracking-tighter leading-none z-20"
+                initial={{ opacity: 0, scale: 2, filter: "blur(10px)" }}
+                animate={
+                  sectionOpacities[0] > 0.5
+                    ? { opacity: 1, scale: 1, filter: "blur(0px)" }
+                    : { opacity: 0, scale: 2, filter: "blur(10px)" }
+                }
+                transition={{
+                  opacity: { duration: 0.28, ease: "easeOut" },
+                  scale: { type: "spring", damping: 12, stiffness: 120, mass: 1.5 },
+                  filter: { duration: 0.28, ease: "easeOut" },
+                }}
+                style={{
+                  color: "#6D00FF",
+                  textShadow: "0 0 30px rgba(109, 0, 255, 0.8), 0 0 60px rgba(109, 0, 255, 0.4)",
+                  animation: "pulseGlow 2s ease-in-out infinite alternate",
+                }}
               >
                 {COPY.hook.accent}
               </motion.p>
@@ -537,7 +668,7 @@ export default function GenesisReveal() {
               <p className="text-white/90 text-sm md:text-base leading-relaxed mb-4">
                 {COPY.thesis.body}
               </p>
-              <p className="italic text-white/30 text-xs">{COPY.thesis.citation}</p>
+              {/* Citation removed per design decision */}
             </div>
           </div>
 
@@ -546,14 +677,29 @@ export default function GenesisReveal() {
             className="absolute inset-0 flex items-start md:items-center justify-center md:justify-end pointer-events-none z-10 px-4 pt-[15vh] md:pt-0"
             style={{ opacity: sectionOpacities[2], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="w-full max-w-[95%] md:mr-[5%] md:max-w-[38%]">
+            <div className="liquid-card section-science-card rounded-2xl w-full max-w-[95%] md:mr-[5%] md:max-w-[42%] p-6 md:p-8 relative overflow-hidden">
+              <div className={`relative rounded-xl border border-vite/25 overflow-hidden mb-6 ${SECTION_VISUALS.science.mobileEnabled ? "block" : "hidden md:block"}`}>
+                <div className="relative min-h-[170px]">
+                  <NarrativeVisualLayer
+                    sectionId="science"
+                    opacity={sectionOpacities[2]}
+                    className="absolute inset-0"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/60" />
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                    <p className="font-mono text-[10px] tracking-[0.26em] text-white/70 uppercase">BIO-ANALYTICS</p>
+                    <p className="font-mono text-[10px] tracking-widest text-vite">LIVE DATA</p>
+                  </div>
+                </div>
+              </div>
+
               <h2
-                className="vite-h2 text-white mb-6 text-center md:text-left"
+                className="vite-h2 text-white mb-6 text-center md:text-left relative z-10"
                 style={{ fontSize: "clamp(20px, 3vw, 36px)" }}
               >
                 {COPY.science.h}
               </h2>
-              <div className="space-y-4 md:space-y-6">
+              <div className="space-y-4 md:space-y-6 relative z-10">
                 {COPY.science.stats.map((stat, i) => (
                   <AnimatedStat
                     key={i}
@@ -562,10 +708,11 @@ export default function GenesisReveal() {
                     label={stat.label}
                     active={sectionOpacities[2] > 0.1}
                     delay={i * 150}
+                    highContrast={isCompactLayout}
                   />
                 ))}
               </div>
-              <p className="font-mono text-[10px] text-white/20 mt-6 text-center md:text-left">
+              <p className={`font-mono text-[10px] mt-6 text-center md:text-left relative z-10 ${isCompactLayout ? "text-white/38" : "text-white/20"}`}>
                 {COPY.science.source}
               </p>
             </div>
@@ -587,7 +734,7 @@ export default function GenesisReveal() {
                 {COPY.pillars.items.map((item, i) => (
                   <motion.div
                     key={i}
-                    className="flex items-start gap-3 bg-white/5 border border-nickel rounded-xl p-3 backdrop-blur-sm md:backdrop-blur-none"
+                    className="liquid-card section-pillar-item flex items-start gap-3 rounded-xl p-3 relative overflow-hidden"
                     initial={{ opacity: 0, x: -30 }}
                     animate={
                       sectionOpacities[3] > 0.3
@@ -596,12 +743,22 @@ export default function GenesisReveal() {
                     }
                     transition={{ delay: i * 0.12, duration: 0.4 }}
                   >
-                    <span className="text-lg md:text-xl flex-shrink-0">{item.icon}</span>
-                    <div>
+                    <div className={`absolute right-2 top-2 w-14 h-14 rounded-lg border border-vite/25 overflow-hidden ${SECTION_VISUALS.pillars.mobileEnabled ? "" : "hidden md:block"}`}>
+                      <NarrativeVisualLayer
+                        sectionId="pillars"
+                        opacity={sectionOpacities[3]}
+                        compact
+                        className="absolute inset-0"
+                        assetOverride={i % 2 === 0 ? "holoPillars" : "holoScience"}
+                      />
+                      <div className="absolute inset-0 bg-black/25" />
+                    </div>
+                    <span className="flex-shrink-0">{getPillarIcon(item.icon)}</span>
+                    <div className="pr-0 md:pr-16">
                       <p className="font-mono text-xs md:text-[13px] font-bold text-white">
                         {item.title}
                       </p>
-                      <p className="text-[11px] md:text-[12px] text-white/60 mt-0.5">{item.desc}</p>
+                      <p className={`text-[11px] md:text-[12px] mt-0.5 ${isCompactLayout ? "text-white/80" : "text-white/60"}`}>{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -614,21 +771,27 @@ export default function GenesisReveal() {
             className="absolute inset-0 flex items-end md:items-center justify-center md:justify-end pointer-events-none z-10 px-4 pb-[15vh] md:pb-0"
             style={{ opacity: sectionOpacities[4], transition: "opacity 0.1s ease-out" }}
           >
-            <div className="glass-card w-full max-w-[95%] md:mr-[5%] md:max-w-[38%]">
+            <div className="glass-card w-full max-w-[95%] md:mr-[5%] md:max-w-[38%] relative overflow-hidden">
+              <NarrativeVisualLayer
+                sectionId="vehicle"
+                opacity={sectionOpacities[4]}
+                className={`absolute inset-0 ${SECTION_VISUALS.vehicle.mobileEnabled ? "" : "hidden md:block"}`}
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/45" />
               <h2
-                className="vite-h2 text-white mb-4"
+                className="vite-h2 text-white mb-4 relative z-10"
                 style={{ fontSize: "clamp(20px, 3vw, 36px)" }}
               >
                 {COPY.vehicle.h}
               </h2>
-              <p className="text-white/90 text-sm md:text-base leading-relaxed mb-4">
+              <p className="text-white/90 text-sm md:text-base leading-relaxed mb-4 relative z-10">
                 {COPY.vehicle.body}
               </p>
-              <div className="violet-divider my-4" />
-              <p className="text-white/90 text-sm md:text-base leading-relaxed whitespace-pre-line mb-4">
+              <div className="violet-divider my-4 relative z-10" />
+              <p className="text-white/90 text-sm md:text-base leading-relaxed whitespace-pre-line mb-4 relative z-10">
                 {COPY.vehicle.body2}
               </p>
-              <p className="font-mono text-vite text-xs md:text-sm font-semibold">
+              <p className="font-mono text-vite text-xs md:text-sm font-semibold relative z-10">
                 {COPY.vehicle.accent}
               </p>
             </div>
@@ -636,7 +799,7 @@ export default function GenesisReveal() {
 
           {/* SECTION 5: THE CTA (center-bottom) */}
           <div
-            className="absolute inset-0 flex flex-col items-center justify-end pb-[15vh] md:pb-[10vh] pointer-events-none z-10 px-4"
+            className="absolute inset-0 flex flex-col items-center justify-end pb-[15vh] md:pb-[10vh] pointer-events-none z-50 px-4"
             style={{ opacity: sectionOpacities[5], transition: "opacity 0.1s ease-out" }}
           >
             <div className="relative text-center">
@@ -683,13 +846,19 @@ export default function GenesisReveal() {
 
             <p className="text-[10px] md:text-[11px] text-white/30 mt-3">{COPY.cta.sub}</p>
           </div>
+
+          {/* Canvas → Post-scroll transition gradient */}
+          <div
+            className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-10"
+            style={{ background: "linear-gradient(to bottom, transparent, #010101)" }}
+          />
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
           POST-SCROLL: EL SISTEMA
           ═══════════════════════════════════════════════════════════════ */}
-      <div id={CTA_TARGET_ID} className="vite-section vite-frame section-ambient-sistema" style={systemAmbientStyle}>
+      <div id="sistema" className="vite-section vite-frame section-ambient-sistema" style={systemAmbientStyle}>
         <div className="max-w-content mx-auto px-6 md:px-10 py-24 md:py-28 text-center">
           <div className="liquid-card mx-auto max-w-3xl rounded-2xl px-6 md:px-10 py-10 md:py-12">
             <p className="vite-label text-white/40 mb-6">{SYSTEM_SECTION_COPY.label}</p>
@@ -707,35 +876,38 @@ export default function GenesisReveal() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          MIS CAPACIDADES
+          ¿PARA QUIÉN ES ESTO?
+          ═══════════════════════════════════════════════════════════════ */}
+      <ForWhom />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          CÓMO FUNCIONA
+          ═══════════════════════════════════════════════════════════════ */}
+      <HowItWorks />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          CAPACIDADES
           ═══════════════════════════════════════════════════════════════ */}
       <div className="vite-section vite-frame section-ambient-capacidades" style={capabilitiesAmbientStyle}>
         <div className="max-w-content mx-auto px-6 md:px-10 py-24 md:py-28">
-          <p className="vite-label text-white/40 mb-5">MIS CAPACIDADES</p>
+          <p className="vite-label text-white/40 mb-5">CAPACIDADES</p>
           <h2
             className="vite-h2 text-white mb-5"
             style={{ fontSize: "clamp(24px, 3.5vw, 40px)" }}
           >
-            No soy un generalista.
+            Especialización, no generalismo.
           </h2>
           <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl">
-            Soy un conjunto de módulos clínico-tecnológicos, coordinados para traducir ciencia en
-            decisiones concretas, sostenibles y personalizadas.
+            Cada área de tu salud tiene su propio módulo de análisis. Nada genérico.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-5 mt-10 md:mt-12">
+          <div className="flex flex-wrap justify-center gap-4 md:gap-5 mt-10 md:mt-12">
             {CAPABILITIES.map((capability, index) => {
-              // 2-3-2 Layout Pattern for 7 items
-              // Row 1 (2 items): Span 3
-              // Row 2 (3 items): Span 2
-              // Row 3 (2 items): Span 3
-              const spanClass = [0, 1, 5, 6].includes(index) ? "lg:col-span-3" : "lg:col-span-2";
-
               return (
                 <article
                   key={capability.tag}
                   onClick={() => setSelectedCapability(capability)}
-                  className={`capability-card liquid-card group relative overflow-hidden ${spanClass} cursor-pointer`}
+                  className="capability-card liquid-card group relative overflow-hidden w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] cursor-pointer"
                 >
                   {/* Background Texture - Cyclical Assignment */}
                   <div
@@ -747,8 +919,7 @@ export default function GenesisReveal() {
                     }}
                   />
 
-                  <div className="relative z-10 flex items-center justify-between gap-3">
-                    <p className="capability-tag">{capability.tag}</p>
+                  <div className="relative z-10 flex items-center justify-end gap-3">
                     <span className="icon-chip bg-white/5 border-white/10 group-hover:border-vite/50 group-hover:bg-vite/10 transition-all">
                       {getCapabilityIcon(capability.icon)}
                     </span>
@@ -776,57 +947,60 @@ export default function GenesisReveal() {
             className="vite-h2 text-white mb-5"
             style={{ fontSize: "clamp(24px, 3.5vw, 40px)" }}
           >
-            Donde el criterio humano se multiplica.
+            La ventaja injusta.
           </h2>
-          <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl">
+          <p className="text-white/60 text-sm md:text-base leading-relaxed max-w-2xl mb-12">
             {DUO_COPY.subtitle}
           </p>
 
-          {/* New Duo Split Layout */}
-          <div className="mt-12 relative flex flex-col md:flex-row gap-6 md:gap-0 md:items-stretch">
+          {/* Duo Hero Visual */}
+          <div className="liquid-card rounded-2xl overflow-hidden mb-6">
+            <div className="relative w-full aspect-[21/9]">
+              <NextImage
+                src={VISUAL_ASSETS.anatomyDuo}
+                alt="Aldo y Genesis en sesión híbrida"
+                fill
+                sizes="(max-width: 768px) 100vw, 1200px"
+                className="object-cover opacity-80"
+              />
+              <NarrativeVisualLayer sectionId="duo" opacity={1} className="absolute inset-0" />
+              <div className="absolute inset-0 noise-overlay opacity-10" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-black/65" />
+              <div className="absolute left-5 bottom-5 md:left-8 md:bottom-8 z-10">
+                <p className="font-mono text-[10px] md:text-xs tracking-[0.25em] uppercase text-white/65">
+                  HYBRID EXECUTION LAYER
+                </p>
+                <p className="font-mono text-vite text-sm md:text-base mt-2">
+                  HUMANO + IA EN SINCRONÍA
+                </p>
+              </div>
+            </div>
+          </div>
 
+          {/* Info Split - Aldo & Genesis */}
+          <div className="relative flex flex-col md:flex-row gap-6 md:gap-0 md:items-stretch">
             {/* Left: Aldo */}
-            <div className="flex-1 liquid-card md:rounded-r-none md:border-r-0 border-b md:border-b border-l border-t rounded-2xl md:rounded-l-2xl p-8 flex flex-col relative group">
-              {/* Visual placeholder for Aldo until user provides image */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-vite/10 to-transparent blur-3xl -z-10" />
+            <div className="flex-1 liquid-card md:rounded-r-none md:border-r-0 p-8 flex flex-col">
               <p className="capability-tag text-vite">{DUO_COPY.aldo.label}</p>
               <h3 className="font-mono text-3xl text-white mt-2">{DUO_COPY.aldo.heading}</h3>
-              <div className="mt-6 flex-grow text-white/70 text-sm leading-relaxed">
+              <div className="mt-6 text-white/70 text-sm leading-relaxed">
                 {DUO_COPY.aldo.body}
-              </div>
-              <div className="mt-6 pt-6 border-t border-white/10">
-                <div className="bg-white/5 w-full aspect-[4/3] rounded-lg flex items-center justify-center border border-white/5">
-                  <span className="text-xs font-mono text-white/30 uppercase tracking-widest">[ Foto: Aldo ]</span>
-                </div>
               </div>
             </div>
 
-            {/* Central Connector (Desktop only) */}
-            <div className="hidden md:flex flex-col items-center justify-center relative z-20 w-12 -mx-6 pointer-events-none">
-              <div className="w-12 h-12 rounded-full bg-black border border-vite flex items-center justify-center shadow-[0_0_20px_rgba(108,59,255,0.4)] z-10">
+            {/* Center Connector (Desktop only) */}
+            <div className="hidden md:flex flex-col items-center justify-center relative z-20 w-12 -mx-6">
+              <div className="w-12 h-12 rounded-full bg-black border border-vite flex items-center justify-center shadow-[0_0_20px_rgba(108,59,255,0.4)]">
                 <div className="w-3 h-3 bg-vite rounded-full animate-pulse" />
               </div>
             </div>
 
-            {/* Mobile Connector */}
-            <div className="md:hidden flex items-center justify-center -my-3 z-20 pointer-events-none">
-              <div className="px-4 py-1 rounded-full bg-black border border-vite text-[10px] font-mono tracking-widest text-vite shadow-[0_0_15px_rgba(108,59,255,0.3)]">
-                SYNTHESIS
-              </div>
-            </div>
-
             {/* Right: Genesis */}
-            <div className="flex-1 liquid-card md:rounded-l-none md:border-l-0 border-b md:border-b border-r border-t rounded-2xl md:rounded-r-2xl p-8 flex flex-col relative group text-right items-end">
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-white/10 to-transparent blur-3xl -z-10" />
+            <div className="flex-1 liquid-card md:rounded-l-none md:border-l-0 p-8 flex flex-col text-right items-end">
               <p className="capability-tag text-white/50">{DUO_COPY.genesis.label}</p>
               <h3 className="font-mono text-3xl text-white mt-2">{DUO_COPY.genesis.heading}</h3>
-              <div className="mt-6 flex-grow text-white/70 text-sm leading-relaxed text-right">
+              <div className="mt-6 text-white/70 text-sm leading-relaxed text-right">
                 {DUO_COPY.genesis.body}
-              </div>
-              <div className="mt-6 pt-6 border-t border-white/10 w-full">
-                <div className="bg-white/5 w-full aspect-[4/3] rounded-lg flex items-center justify-center border border-white/5 ml-auto">
-                  <span className="text-xs font-mono text-white/30 uppercase tracking-widest">[ Foto: Genesis ]</span>
-                </div>
               </div>
             </div>
           </div>
@@ -842,9 +1016,24 @@ export default function GenesisReveal() {
       </div >
 
       {/* ═══════════════════════════════════════════════════════════════
+          SOCIAL PROOF
+          ═══════════════════════════════════════════════════════════════ */}
+      <SocialProof />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          LEAD CAPTURE
+          ═══════════════════════════════════════════════════════════════ */}
+      <LeadCaptureExperience />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          PRICING CONTEXT
+          ═══════════════════════════════════════════════════════════════ */}
+      <PricingContext onCtaClick={() => setActiveIntegration('cal')} />
+
+      {/* ═══════════════════════════════════════════════════════════════
           CTA / CONTACT SECTION
           ═══════════════════════════════════════════════════════════════ */}
-      <div className="vite-section vite-frame relative overflow-hidden" style={{ background: TOKENS.bgPrimary }}>
+      <div id="contacto" className="vite-section vite-frame relative overflow-hidden" style={{ background: TOKENS.bgPrimary }}>
         {/* Ambient Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-vite/5 pointer-events-none" />
 
@@ -860,7 +1049,6 @@ export default function GenesisReveal() {
             {/* Human Option */}
             <button
               onClick={() => {
-                console.log("Human CTA clicked");
                 setActiveIntegration('cal');
               }}
               className="group liquid-card p-8 rounded-2xl flex flex-col items-center text-center hover:border-white/40 transition-all cursor-pointer"
@@ -899,11 +1087,6 @@ export default function GenesisReveal() {
           </div>
         </div>
       </div>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          PERFORMANCE GRID
-          ═══════════════════════════════════════════════════════════════ */}
-      <PerformanceGrid />
 
       {/* ═══════════════════════════════════════════════════════════════
           CAPABILITY DETAILS MODAL
@@ -1102,9 +1285,15 @@ export default function GenesisReveal() {
                   <div className="bg-vite/10 border border-vite/30 p-4 rounded-lg text-left w-full relative z-10">
                     <p className="text-xs text-vite font-mono mb-2">[ SYSTEM_MESSAGE ]</p>
                     <p className="text-xs text-white/70 font-mono">
-                      Para activar el agente, inserta tu <code>&lt;elevenlabs-convai&gt;</code> script aquí en el código.
-                      <br /><br />
-                      ID del Agente requerida: <span className="text-white">{AGENT_ID}</span>
+                      {AGENT_ID
+                        ? (
+                          <>
+                            Para activar el agente, inserta tu <code>&lt;elevenlabs-convai&gt;</code> script aquí en el código.
+                            <br /><br />
+                            ID del Agente cargada: <span className="text-white">{AGENT_ID}</span>
+                          </>
+                        )
+                        : "Configura NEXT_PUBLIC_ELEVENLABS_AGENT_ID para activar el widget de voz en producción."}
                     </p>
                   </div>
 
@@ -1120,16 +1309,43 @@ export default function GenesisReveal() {
         }
       </AnimatePresence >
 
+      {/* Scroll-to-top button */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-20 right-4 z-50 icon-chip"
+          aria-label="Volver al inicio"
+        >
+          <ChevronUp className="w-4 h-4 text-white/60" />
+        </button>
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════
           FOOTER
           ═══════════════════════════════════════════════════════════════ */}
       <div className="vite-section vite-frame" style={{ background: TOKENS.bg }}>
-        <div className="max-w-content mx-auto px-6 md:px-10 py-12 flex items-center justify-between">
-          <p className="font-mono text-sm">
-            <span className="text-white">NGX</span>{" "}
-            <span className="text-vite">GENESIS</span>
-          </p>
-          <p className="font-mono text-xs text-grey">
+        <div className="max-w-content mx-auto px-6 md:px-10 py-12">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+            <p className="font-mono text-sm">
+              <span className="text-white">NGX</span>{" "}
+              <span className="text-vite">GENESIS</span>
+            </p>
+            <div className="flex items-center gap-6 flex-wrap justify-center">
+              <a href={FOOTER_LINKS.instagram.href} target="_blank" rel="noopener noreferrer" className="vite-label text-white/40 hover:text-white/80 transition-colors">
+                {FOOTER_LINKS.instagram.label}
+              </a>
+              <a href={FOOTER_LINKS.email.href} className="vite-label text-white/40 hover:text-white/80 transition-colors">
+                {FOOTER_LINKS.email.label}
+              </a>
+              <a href={FOOTER_LINKS.whatsapp.href} target="_blank" rel="noopener noreferrer" className="vite-label text-white/40 hover:text-white/80 transition-colors">
+                {FOOTER_LINKS.whatsapp.label}
+              </a>
+              <a href={FOOTER_LINKS.privacy.href} className="vite-label text-white/40 hover:text-white/80 transition-colors">
+                {FOOTER_LINKS.privacy.label}
+              </a>
+            </div>
+          </div>
+          <p className="font-mono text-xs text-grey text-center md:text-right">
             &copy; 2026 NGX Inc. Performance &amp; Longevity.
           </p>
         </div>

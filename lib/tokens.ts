@@ -26,10 +26,21 @@ export const AUDIO = {
   baseUrl: "https://api.elevenlabs.io/v1/text-to-speech",
 } as const;
 
+export const AUDIO_ASSETS = {
+  ambience: "/audio/genesis_ambience.mp3",
+  hook: "/audio/genesis_hook.mp3",
+  thesis: "/audio/genesis_thesis.mp3",
+  science: "/audio/genesis_science.mp3",
+  pillars: "/audio/genesis_pillars.mp3",
+  vehicle: "/audio/genesis_vehicle.mp3",
+  cta: "/audio/genesis_cta.mp3",
+  intro: "/audio/genesis_intro.mp3",
+} as const;
+
 export const AUDIO_CONFIG = {
-  fadeDuration: 2000,
-  bgVolume: 0.3,
-  voiceVolume: 1.0,
+  fadeDuration: 2000, // ms
+  bgVolume: 0.25,     // Lowered slightly for voice clarity
+  voiceVolume: 0.9,   // Main narrative voice
 } as const;
 
 export const POST_SCROLL_THEME = {
@@ -42,8 +53,82 @@ export const POST_SCROLL_THEME = {
 } as const;
 
 export const TOTAL_FRAMES = 120;
-export const SCROLL_HEIGHT_VH = 600; // 6x viewport
-export const CTA_TARGET_ID = "sistema";
+export const SCROLL_HEIGHT_VH = 1200; // 12x viewport for smoother pacing
+export const CTA_TARGET_ID = "contacto";
+
+export const VISUAL_ASSETS = {
+  textures: [
+    "/assets/abstract_tech_texture_1_1770753343437.png",
+    "/assets/abstract_tech_texture_2_1770753357544.png",
+    "/assets/abstract_tech_texture_3_1770753372409.png",
+  ],
+  holoScience: "/assets/grid_engine.png",
+  holoPillars: "/assets/grid_mind.png",
+  anatomyVehicle: "/assets/fitness/rower.png",
+  anatomyDuo: "/assets/duo_working.png",
+} as const;
+
+export type VisualVariant = "none" | "holo-data" | "anatomy-scan";
+export type SectionVisualTarget = "hook" | "thesis" | "science" | "pillars" | "vehicle" | "duo";
+export type VisualImageAssetKey = Exclude<keyof typeof VISUAL_ASSETS, "textures">;
+
+export interface SectionVisualConfig {
+  variant: VisualVariant;
+  assetKey?: VisualImageAssetKey;
+  mobileEnabled: boolean;
+  opacity: number;
+  blendMode: "normal" | "overlay" | "screen";
+}
+
+export const SECTION_VISUALS: Record<SectionVisualTarget, SectionVisualConfig> = {
+  hook: {
+    variant: "none",
+    mobileEnabled: false,
+    opacity: 0,
+    blendMode: "normal",
+  },
+  thesis: {
+    variant: "none",
+    mobileEnabled: false,
+    opacity: 0,
+    blendMode: "normal",
+  },
+  science: {
+    variant: "holo-data",
+    assetKey: "holoScience",
+    mobileEnabled: false,
+    opacity: 0.65,
+    blendMode: "screen",
+  },
+  pillars: {
+    variant: "holo-data",
+    assetKey: "holoPillars",
+    mobileEnabled: false,
+    opacity: 0.6,
+    blendMode: "screen",
+  },
+  vehicle: {
+    variant: "anatomy-scan",
+    assetKey: "anatomyVehicle",
+    mobileEnabled: true,
+    opacity: 0.52,
+    blendMode: "overlay",
+  },
+  duo: {
+    variant: "anatomy-scan",
+    assetKey: "anatomyDuo",
+    mobileEnabled: true,
+    opacity: 0.48,
+    blendMode: "overlay",
+  },
+};
+
+export const VISUAL_MOTION = {
+  floatDistance: 8,
+  floatDuration: 7.5,
+  scanDuration: 4.2,
+  compactScale: 1.02,
+} as const;
 
 // Frame naming: genesis_000.webp through genesis_119.webp
 export function getFramePath(index: number): string {
@@ -114,12 +199,12 @@ export const COPY = {
     accent: "Es la falta de músculo.",
   },
   thesis: {
-    h: "Mi Tesis Central",
-    body: "Mi análisis es concluyente: el músculo es el órgano de la longevidad. Sobre esta verdad diseño cada decisión del sistema que opera contigo.",
-    citation: "— Dra. Gabrielle Lyon, Muscle-Centric Medicine",
+    h: "La verdad que cambia todo.",
+    body: "El músculo no es estética. Es el órgano que predice cuántos años vivirás con calidad. Cada decisión de tu protocolo se construye sobre esta verdad.",
+    citation: "— Muscle-Centric Medicine, Dra. Gabrielle Lyon",
   },
   science: {
-    h: "La ciencia es inequívoca.",
+    h: "Los números no mienten.",
     stats: [
       { value: 30, unit: "%", label: "mayor riesgo de mortalidad con baja masa muscular" },
       { value: 66, unit: "%", label: "mayor riesgo de mortalidad con baja fuerza muscular" },
@@ -128,43 +213,43 @@ export const COPY = {
     source: "Li et al., Hsieh et al., Shailendra et al. (2022–2025)",
   },
   pillars: {
-    h: "Mis 4 Pilares de Operación",
+    h: "Tu protocolo tiene 4 ejes.",
     items: [
       {
-        icon: "🏋️",
+        icon: "Dumbbell",
         title: "Estímulo Inteligente",
-        desc: "Diseño progresiones de fuerza y resistencia con dosis mínima efectiva para resultados sostenibles.",
+        desc: "Entrenamiento progresivo diseñado para tu nivel, contexto y metas. Sin ruido.",
       },
       {
-        icon: "🥩",
-        title: "Nutrición Centrada en Proteínas",
-        desc: "Gestiono la estrategia nutricional con enfoque en masa magra, adherencia y precisión metabólica.",
+        icon: "Beef",
+        title: "Nutrición de Precisión",
+        desc: "Proteína, timing y estructura nutricional basada en tu biología, no en una dieta genérica.",
       },
       {
-        icon: "🌙",
-        title: "Recuperación Optimizada",
-        desc: "Orquesto sueño, estrés y recuperación para que cada sesión se convierta en adaptación real.",
+        icon: "Moon",
+        title: "Recuperación Activa",
+        desc: "Sueño, estrés y descanso orquestados para que cada sesión se convierta en adaptación.",
       },
       {
-        icon: "📊",
-        title: "Medición Real",
-        desc: "Opero con biomarcadores y función. No persigo peso; optimizo capacidad física y longevidad.",
+        icon: "TrendingUp",
+        title: "Medición Funcional",
+        desc: "Biomarcadores reales: fuerza de agarre, VO2 max, composición corporal. No solo peso.",
       },
     ],
   },
   vehicle: {
-    h: "Mi Arquitectura: IA + Humano",
-    body: "Fui construido para escalar la ciencia con velocidad y precisión. Pero la adherencia sostenida requiere contexto, empatía y criterio humano.",
-    body2: "Yo proceso la complejidad biológica en tiempo real.\nTu coach convierte ese análisis en ejecución diaria.",
-    accent: "NGX HYBRID: mi precisión de sistema + la humanidad de tu coach.",
+    h: "IA + Coach. Sin elegir.",
+    body: "La mayoría te obliga a elegir: tecnología fría o coach caro. NGX HYBRID te da los dos.",
+    body2: "Mi análisis en tiempo real\n+ un coach humano que conoce tu contexto.",
+    accent: "Precisión de sistema. Empatía de persona.",
   },
   cta: {
     mega: "NGX",
     h: "GENESIS",
     tagline: "Performance & Longevity",
-    quote: "La epidemia de obesidad no es de exceso de grasa.\nEs de falta de músculo.",
-    cta: "VER CÓMO TRABAJO",
-    sub: "Rinde hoy. Vive mejor mañana.",
+    quote: "Tu cuerpo no espera.\nTu protocolo tampoco debería.",
+    cta: "DESCUBRE TU PROTOCOLO",
+    sub: "Evaluación gratuita · 5 minutos",
   },
 } as const;
 
@@ -322,7 +407,7 @@ export const SECTION_BACKGROUNDS: Record<"sistema" | "capacidades" | "duo", Sect
 export const SYSTEM_SECTION_COPY = {
   label: "EL SISTEMA",
   h: "Construido para quienes juegan a largo plazo.",
-  body: "No fui diseñado para impresionar una semana. Fui diseñado para operar durante décadas. Combino análisis clínico, especialización por dominios y ejecución orientada a adherencia para convertir ciencia muscular en resultados sostenibles.",
+  body: "No es un plan de 30 días. Es un sistema que opera contigo durante décadas. Análisis clínico, especialización por dominios y ejecución orientada a adherencia — todo integrado.",
 };
 
 export interface DuoColumn {
@@ -340,54 +425,274 @@ export interface DuoCopy {
 }
 
 export const DUO_COPY: DuoCopy = {
-  label: "EL DÚO: ARQUITECTO HUMANO & SISTEMA DE IA",
-  subtitle:
-    "La ventaja no es elegir entre humano o máquina. La ventaja es su sinergia de precisión aplicada.",
+  label: "NGX HYBRID",
+  subtitle: "Ni solo humano. Ni solo máquina. La sinergia de ambos.",
   aldo: {
-    label: "ARQUITECTO HUMANO",
+    label: "ESTRATEGIA HUMANA",
     heading: "Aldo",
-    body: "Durante 3 años, Aldo condensó una década de experiencia y más de 10 certificaciones en un sistema accionable. Él aporta visión estratégica, empatía contextual y criterio del mundo real para traducir ciencia en decisiones humanas.",
+    body: "Visión de largo plazo. Empatía. Criterio del mundo real. 10 años de experiencia condensados en un sistema accionable.",
   },
   genesis: {
-    label: "SISTEMA DE IA",
+    label: "INTELIGENCIA ARTIFICIAL",
     heading: "GENESIS",
-    body: "Yo proceso grandes volúmenes de datos biológicos y de comportamiento para adaptar cada recomendación a tu fisiología única. Opero con velocidad, precisión y consistencia continua para escalar esa visión sin perder personalización.",
+    body: "Velocidad. Precisión. Consistencia 24/7. Cada dato procesado, cada decisión personalizada, en tiempo real.",
   },
-  synthesis: "NGX HYBRID = ciencia + adherencia.",
+  synthesis: "Tu protocolo combina lo mejor de ambos mundos.",
 };
 
 export const CONTACT_SECTION = {
-  title: "Inicia tu Protocolo",
-  subtitle: "Dos caminos para dar el primer paso.",
+  title: "Tu primer paso empieza aquí.",
+  subtitle: "Elige cómo quieres comenzar.",
   human: {
-    title: "Estrategia Humana",
-    desc: "Agenda una llamada de 15 min con un especialista para evaluar tu caso.",
-    cta: "AGENDAR LLAMADA",
+    title: "Evaluación Humana",
+    desc: "Llamada de 15 minutos para evaluar tu caso y diseñar tu ruta personalizada.",
+    cta: "AGENDAR EVALUACIÓN",
     icon: "Calendar",
   },
   ai: {
-    title: "Interfaz Genesis",
-    desc: "Habla directamente con mi núcleo de IA. Respuestas inmediatas sobre costos y metodología.",
-    cta: "INICIAR CHAT",
+    title: "Habla con GENESIS",
+    desc: "Respuestas inmediatas sobre metodología, costos y si esto es para ti.",
+    cta: "HABLAR CON GENESIS",
     icon: "Sparkles",
   },
 };
 
-export const PERFORMANCE_GRID = {
-  engine: {
-    label: "THE_ENGINE",
-    stat: "VO2_MAX_OPTIMIZED",
-    desc: "Metabolic conditioning without joint impact.",
+export interface LeadCaptureCopy {
+  inlineTag: string;
+  inlineTitle: string;
+  inlineBody: string;
+  inlineCta: string;
+  inlineSub: string;
+  modalTitle: string;
+  modalBody: string;
+  modalCta: string;
+  stickyCta: string;
+  successTitle: string;
+  successBody: string;
+  fields: {
+    emailLabel: string;
+    emailPlaceholder: string;
+    whatsappLabel: string;
+    whatsappPlaceholder: string;
+  };
+  legal: string;
+}
+
+export const LEAD_CAPTURE: LeadCaptureCopy = {
+  inlineTag: "PLAN BASE GRATIS",
+  inlineTitle: "¿Aún no quieres agendar? Te mandamos un plan inicial por correo.",
+  inlineBody: "Recibe una versión base de protocolo para empezar hoy y evaluar si NGX es para ti.",
+  inlineCta: "RECIBIR PLAN POR EMAIL",
+  inlineSub: "Entrega inmediata · sin costo",
+  modalTitle: "Antes de irte, llévate tu plan base.",
+  modalBody: "Te enviamos un esquema inicial de entrenamiento, nutrición y recuperación para que empieces esta semana.",
+  modalCta: "ENVIAR A MI CORREO",
+  stickyCta: "RECIBIR PLAN",
+  successTitle: "Listo. Tu plan base va en camino.",
+  successBody: "Revisa tu correo en los próximos minutos. Si quieres acelerar resultados, agenda evaluación.",
+  fields: {
+    emailLabel: "Correo electrónico",
+    emailPlaceholder: "tu@email.com",
+    whatsappLabel: "WhatsApp (opcional)",
+    whatsappPlaceholder: "+52 81 0000 0000",
   },
-  mind: {
-    label: "THE_MIND",
-    stat: "NEURO_PRIMED",
-    desc: "Focus state activation.",
-  },
-  fuel: {
-    label: "THE_FUEL",
-    stat: "METABOLIC_EFFICIENCY",
-    desc: "Nutrition as a precision tool.",
-  },
+  legal: "Al enviar tus datos aceptas ser contactado por NGX para seguimiento de tu protocolo.",
 };
 
+// ═══════════════════════════════════════════════════════════════
+// NEW SECTIONS: FOR WHOM, HOW IT WORKS, SOCIAL PROOF, PRICING
+// ═══════════════════════════════════════════════════════════════
+
+export interface ProfileItem {
+  title: string;
+  age: string;
+  desc: string;
+  icon: string;
+}
+
+export interface ForWhomSection {
+  label: string;
+  h: string;
+  subtitle: string;
+  profiles: ProfileItem[];
+}
+
+export const FOR_WHOM_SECTION: ForWhomSection = {
+  label: "¿ESTO ES PARA TI?",
+  h: "Diseñado para quienes no buscan atajos.",
+  subtitle: "Si reconoces tu situación aquí, podemos ayudarte.",
+  profiles: [
+    {
+      title: "El Profesional que Perdió Prioridad",
+      age: "35-50",
+      desc: "Tu carrera avanza. Tu cuerpo no. Ya no aceptas que el éxito en una cosa signifique descuido en otra. Buscas un sistema que funcione con tu ritmo de vida, no contra él.",
+      icon: "Briefcase",
+    },
+    {
+      title: "El que Ya Entrena pero No Avanza",
+      age: "30-45",
+      desc: "Llevas meses esforzándote. El problema no es disciplina — es que nadie te ha dado el sistema correcto. El esfuerzo ya está. Solo falta la dirección.",
+      icon: "Dumbbell",
+    },
+    {
+      title: "El Preventivo Inteligente",
+      age: "45-60",
+      desc: "Los marcadores empezaron a moverse. No hacia donde quieres. Esto no es una alarma — es una oportunidad de intervenir ahora, con datos, antes de que se convierta en diagnóstico.",
+      icon: "HeartPulse",
+    },
+    {
+      title: "El que Quiere Envejecer Bien",
+      age: "40-60",
+      desc: "No quieres más años. Quieres que los años que vienen valgan la pena — con energía, función y autonomía hasta el final. Eso no pasa solo.",
+      icon: "Timer",
+    },
+  ],
+};
+
+export interface HowItWorksStep {
+  step: string;
+  title: string;
+  desc: string;
+  icon: string;
+}
+
+export interface HowItWorksSection {
+  label: string;
+  h: string;
+  steps: HowItWorksStep[];
+  note: string;
+}
+
+export const HOW_IT_WORKS_SECTION: HowItWorksSection = {
+  label: "ASÍ FUNCIONA",
+  h: "3 pasos. Cero improvisación.",
+  steps: [
+    {
+      step: "01",
+      title: "Evaluación Inicial",
+      desc: "Completas un check-in de 5 minutos: historial, metas, contexto, limitaciones. GENESIS analiza y genera tu protocolo base.",
+      icon: "ClipboardCheck",
+    },
+    {
+      step: "02",
+      title: "Ejecución Guiada",
+      desc: "Recibes tu programa de entrenamiento, nutrición y recuperación personalizado. Tu coach humano te acompaña en la ejecución diaria.",
+      icon: "Play",
+    },
+    {
+      step: "03",
+      title: "Optimización Continua",
+      desc: "El sistema se recalibra cada semana con tus datos reales. Lo que funcionó se refuerza. Lo que no, se ajusta.",
+      icon: "RefreshCw",
+    },
+  ],
+  note: "El 80% del éxito depende de tu ejecución. Nosotros garantizamos que ese esfuerzo vaya en la dirección correcta.",
+};
+
+export interface Testimonial {
+  quote: string;
+  name: string;
+  age: number;
+  city: string;
+}
+
+export interface Metric {
+  value: string;
+  label: string;
+}
+
+export interface SocialProofSection {
+  label: string;
+  h: string;
+  testimonials: Testimonial[];
+  metrics: Metric[];
+}
+
+export const SOCIAL_PROOF_SECTION: SocialProofSection = {
+  label: "RESULTADOS REALES",
+  h: "Ellos ya empezaron.",
+  testimonials: [
+    {
+      quote: "En 12 semanas bajé 8% de grasa corporal sin perder un gramo de músculo.",
+      name: "Carlos",
+      age: 42,
+      city: "Monterrey",
+    },
+    {
+      quote: "Mi fuerza de agarre subió 15kg. Mi glucosa bajó 12 puntos.",
+      name: "Roberto",
+      age: 55,
+      city: "CDMX",
+    },
+    {
+      quote: "Por primera vez entiendo POR QUÉ hago lo que hago en el gym.",
+      name: "María",
+      age: 38,
+      city: "Guadalajara",
+    },
+  ],
+  metrics: [
+    { value: "+847", label: "usuarios activos" },
+    { value: "12", label: "semanas promedio" },
+    { value: "94%", label: "adherencia" },
+  ],
+};
+
+export interface PricingOption {
+  title: string;
+  items: string[];
+}
+
+export interface PricingComparison {
+  without: PricingOption;
+  with: PricingOption;
+}
+
+export interface PricingSection {
+  label: string;
+  h: string;
+  body: string;
+  comparison: PricingComparison;
+  cta: string;
+  startingAt: string;
+}
+
+export const PRICING_SECTION: PricingSection = {
+  label: "TU INVERSIÓN",
+  h: "¿Cuánto vale tu longevidad?",
+  body: "No vendemos suscripciones genéricas. Tu protocolo se diseña según tu caso. Agenda una evaluación gratuita para recibir un plan con precio personalizado.",
+  comparison: {
+    without: {
+      title: "Sin sistema",
+      items: [
+        "Gym + nutriólogo + apps separadas",
+        "$3,000-8,000 MXN/mes en pedazos",
+        "Sin medición real",
+        "Improvisación",
+      ],
+    },
+    with: {
+      title: "Con NGX",
+      items: [
+        "Un ecosistema integrado",
+        "Inversión personalizada todo incluido",
+        "Biomarcadores + ajuste continuo",
+        "Protocolo basado en evidencia",
+      ],
+    },
+  },
+  cta: "AGENDA TU EVALUACIÓN GRATUITA",
+  startingAt: "desde $5,000 MXN/mes",
+};
+
+// ═══════════════════════════════════════════════════════════════
+// FOOTER LINKS
+// Update these values with your real handles / URLs
+// ═══════════════════════════════════════════════════════════════
+
+export const FOOTER_LINKS = {
+  instagram: { href: "https://instagram.com/ngxgenesis", label: "@ngxgenesis" },
+  email:     { href: "mailto:hola@ngx.mx",               label: "hola@ngx.mx" },
+  whatsapp:  { href: "https://wa.me/528100000000",        label: "WhatsApp" },
+  privacy:   { href: "/privacidad",                       label: "Privacidad" },
+} as const;
